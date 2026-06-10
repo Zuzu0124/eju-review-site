@@ -228,6 +228,7 @@ function displayDate(dateStr) {
 const KEYS = {
   ITEMS: 'eju.items.v2',
   LEGACY_ITEMS: 'eju.items.v1',
+  LEGACY_LITE_ITEMS: 'eju.v2', // 更早期精简版的数据 key
   MIGRATED_FLAG: 'eju.migrated.v1to2',
 };
 const SUBJECTS = ['数学', '物理', '化学-理论', '化学-记忆'];
@@ -336,6 +337,31 @@ function migrateAnyItem(item, today) {
   return normalizeItem(item);
 }
 
+// 更早期精简版（eju.v2，字段缩写 b/s/src/loc/q/dif/c/u/r）→ v1 形状，再走 v1 迁移
+function liteToV1Item(item) {
+  if (!item || typeof item !== 'object') return null;
+  const difficultyMap = { n: 'normal', h: 'hard', c: 'critical' };
+  const toISO = s => !s ? '' : (/^\d{4}-\d{2}-\d{2}$/.test(s) ? s + 'T00:00:00' : String(s));
+  return {
+    id: item.id || uid(),
+    board: item.b === 'k' ? 'kakomon' : 'mondai',
+    subject: item.s || '未分类',
+    source: item.src || '',
+    location: item.loc || '',
+    questionNo: item.q || '',
+    note: item.note || '',
+    difficulty: difficultyMap[item.dif] || 'normal',
+    createdAt: toISO(item.c) || new Date().toISOString(),
+    updatedAt: toISO(item.u || item.c) || undefined,
+    reviews: Array.isArray(item.r) ? item.r.map(rv => ({
+      dueDate: rv.d,
+      status: rv.done ? 'done' : 'pending',
+      completedAt: rv.done ? toISO(rv.at || rv.d) : null,
+      quality: null,
+    })) : [],
+  };
+}
+
 // 页面加载时迁移。旧 key eju.items.v1 原样保留，作为永久备份。
 function loadAndMigrateItems() {
   const today = todayStr();
@@ -346,6 +372,13 @@ function loadAndMigrateItems() {
   const v1 = loadJSON(KEYS.LEGACY_ITEMS, null);
   if (Array.isArray(v1) && v1.length) {
     const migrated = v1.map(it => migrateAnyItem(it, today)).filter(Boolean);
+    try { localStorage.setItem(KEYS.MIGRATED_FLAG, new Date().toISOString()); } catch (e) {}
+    return migrated;
+  }
+  const lite = loadJSON(KEYS.LEGACY_LITE_ITEMS, null);
+  if (Array.isArray(lite) && lite.length) {
+    const migrated = lite.map(liteToV1Item).filter(Boolean)
+      .map(it => migrateAnyItem(it, today)).filter(Boolean);
     try { localStorage.setItem(KEYS.MIGRATED_FLAG, new Date().toISOString()); } catch (e) {}
     return migrated;
   }
@@ -916,6 +949,7 @@ function clearAllData() {
   if (!confirm('最终确认: 真的删除全部数据？')) return;
   localStorage.removeItem(KEYS.ITEMS);
   localStorage.removeItem(KEYS.LEGACY_ITEMS);
+  localStorage.removeItem(KEYS.LEGACY_LITE_ITEMS);
   localStorage.removeItem(KEYS.MIGRATED_FLAG);
   state.items = [];
   showToast('已删除全部数据');
