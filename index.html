@@ -230,6 +230,7 @@ const KEYS = {
   LEGACY_ITEMS: 'eju.items.v1',
   LEGACY_LITE_ITEMS: 'eju.v2', // 更早期精简版的数据 key
   MIGRATED_FLAG: 'eju.migrated.v1to2',
+  TIER_REPLAY_FLAG: 'eju.tierReplay.v1',
 };
 const SUBJECTS = ['数学', '物理', '化学-理论', '化学-记忆'];
 const BOARDS = { mondai: '母题', kakomon: '过去问' };
@@ -373,22 +374,51 @@ function loadAndMigrateItems() {
   const today = todayStr();
   const v2 = loadJSON(KEYS.ITEMS, null);
   if (Array.isArray(v2)) {
-    return v2.map(it => migrateAnyItem(it, today)).filter(Boolean);
+    return repairMigratedTiers(v2.map(it => migrateAnyItem(it, today)).filter(Boolean));
   }
   const v1 = loadJSON(KEYS.LEGACY_ITEMS, null);
   if (Array.isArray(v1) && v1.length) {
     const migrated = v1.map(it => migrateAnyItem(it, today)).filter(Boolean);
     try { localStorage.setItem(KEYS.MIGRATED_FLAG, new Date().toISOString()); } catch (e) {}
-    return migrated;
+    return repairMigratedTiers(migrated);
   }
   const lite = loadJSON(KEYS.LEGACY_LITE_ITEMS, null);
   if (Array.isArray(lite) && lite.length) {
     const migrated = lite.map(liteToV1Item).filter(Boolean)
       .map(it => migrateAnyItem(it, today)).filter(Boolean);
     try { localStorage.setItem(KEYS.MIGRATED_FLAG, new Date().toISOString()); } catch (e) {}
-    return migrated;
+    return repairMigratedTiers(migrated);
   }
   return [];
+}
+
+// 迁移题目的档位修正：不把旧题一律归到档位 1，而是把保留下来的复习记录
+// 按新规则逐次回放（○ 进档 / △ 原档 / × 归零 / 末档○毕业），推算出当前
+// 应处的档位和到期日，让旧数据自然接入新循环。结果只取决于 history，幂等。
+function replayHistoryTiers(item) {
+  if (!item.legacy || !item.history.length || item.status === 'graduated') return item;
+  const sorted = item.history.slice()
+    .sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+  const sim = {
+    subject: item.subject,
+    status: 'learning',
+    intervalIndex: 0,
+    dueDate: item.dueDate,
+    history: [],
+  };
+  for (const h of sorted) applyRating(sim, h.rating, h.date);
+  item.intervalIndex = sim.intervalIndex;
+  item.status = sim.status;
+  item.dueDate = sim.dueDate;
+  item.history = sorted;
+  item.updatedAt = new Date().toISOString();
+  return item;
+}
+function repairMigratedTiers(items) {
+  try { if (localStorage.getItem(KEYS.TIER_REPLAY_FLAG)) return items; } catch (e) {}
+  const out = items.map(replayHistoryTiers);
+  try { localStorage.setItem(KEYS.TIER_REPLAY_FLAG, new Date().toISOString()); } catch (e) {}
+  return out;
 }
 
 // ---------- 核心调度逻辑 ----------
@@ -991,6 +1021,7 @@ function clearAllData() {
   localStorage.removeItem(KEYS.LEGACY_ITEMS);
   localStorage.removeItem(KEYS.LEGACY_LITE_ITEMS);
   localStorage.removeItem(KEYS.MIGRATED_FLAG);
+  localStorage.removeItem(KEYS.TIER_REPLAY_FLAG);
   state.items = [];
   showToast('已删除全部数据');
   navigate('review');
