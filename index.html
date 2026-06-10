@@ -232,6 +232,7 @@ const KEYS = {
   MIGRATED_FLAG: 'eju.migrated.v1to2',
 };
 const SUBJECTS = ['数学', '物理', '化学-理论', '化学-记忆'];
+const BOARDS = { mondai: '母题', kakomon: '过去问' };
 const SEQ_PROCEDURAL = [1, 3, 7, 14, 30];   // 程序性：数学 / 物理 / 化学-理论
 const SEQ_MEMORY = [1, 2, 4, 7, 14, 30];    // 记忆性：化学-记忆
 const GRAD_CYCLE_DAYS = 30;                 // 毕业后抽查周期
@@ -267,8 +268,8 @@ function saveItems(items) {
 }
 
 // ---------- 数据结构 / 迁移 ----------
-// v2 题目: { id, subject, source, note, addedDate, intervalIndex, dueDate,
-//            history:[{date, rating}], status:'learning'|'graduated', updatedAt, legacy? }
+// v2 题目: { id, board:'mondai'|'kakomon', subject, source, note, addedDate, intervalIndex,
+//            dueDate, history:[{date, rating}], status:'learning'|'graduated', updatedAt, legacy? }
 
 // 缺字段时补默认值（已有题目默认 intervalIndex=0、status=learning、dueDate=明天）
 function normalizeItem(item) {
@@ -283,8 +284,12 @@ function normalizeItem(item) {
         .filter(h => h && isValidDateStr(h.date) && RATINGS.includes(h.rating))
         .map(h => ({ date: h.date, rating: h.rating }))
     : [];
+  // 早期迁移的题目 board 可能还留在 legacy 里，提升到顶层
+  const board = item.board === 'kakomon' || (!item.board && item.legacy?.board === 'kakomon')
+    ? 'kakomon' : 'mondai';
   const out = {
     id: String(item.id),
+    board,
     subject,
     source: typeof item.source === 'string' ? item.source : '',
     note: typeof item.note === 'string' ? item.note : '',
@@ -315,6 +320,7 @@ function migrateLegacyItem(old, today) {
   const source = [old.source, old.location, old.questionNo].filter(Boolean).join(' ').trim();
   return normalizeItem({
     id: old.id,
+    board: old.board,
     subject: old.subject || '未分类',
     source: source || '(无出处)',
     note: old.note || '',
@@ -418,10 +424,11 @@ function applyRating(item, rating, today) {
   return item;
 }
 
-function createItem(subject, source, note, today) {
+function createItem(subject, source, note, today, board = 'mondai') {
   const seq = seqFor(subject);
   return {
     id: uid(),
+    board: board === 'kakomon' ? 'kakomon' : 'mondai',
     subject,
     source: source.trim(),
     note: (note || '').trim(),
@@ -467,7 +474,9 @@ function groupBySubject(list) {
 const state = {
   view: 'review',
   items: [],
+  entryBoard: 'mondai',
   entrySubject: SUBJECTS[0],
+  libBoard: 'all',
   libSubject: 'all',
   libStatus: 'all',
   libSearch: '',
@@ -591,6 +600,7 @@ function taskCard(item, today) {
   return `<div class="task-card ${late ? 'overdue' : ''} ${isGrad ? 'gradcheck' : ''}">
     <div class="task-top"><div class="task-source">${escapeHtml(item.source)}</div></div>
     <div class="task-meta">
+      <span class="tag">${BOARDS[item.board]}</span>
       <span class="tag subj">${escapeHtml(item.subject)}</span>
       ${stage}
       ${late ? `<span class="tag late">逾期 ${late} 天</span>` : ''}
@@ -631,19 +641,28 @@ function renderEntry() {
   const today = todayStr();
   const todayItems = state.items.filter(i => i.addedDate === today)
     .sort((a, b) => b.updatedAt < a.updatedAt ? -1 : 1);
-  const sources = [...new Set(state.items.filter(i => i.subject === state.entrySubject).map(i => i.source))].slice(0, 50);
+  const sources = [...new Set(state.items
+    .filter(i => i.board === state.entryBoard && i.subject === state.entrySubject)
+    .map(i => i.source))].slice(0, 50);
+  const placeholder = state.entryBoard === 'kakomon'
+    ? '例: 2023年6月 数学 Q12'
+    : '例: 青チャートIIB p.123 例题5';
   let html = `<div class="card">
-    <label class="form-label" style="margin-top:0">科目</label>
+    <label class="form-label" style="margin-top:0">类型</label>
+    <div class="subject-pick">${Object.entries(BOARDS).map(([k, label]) =>
+      `<button class="${k === state.entryBoard ? 'on' : ''}" onclick="setEntryBoard('${k}')">${label}</button>`).join('')}
+    </div>
+    <label class="form-label">科目</label>
     <div class="subject-pick">${SUBJECTS.map(s =>
       `<button class="${s === state.entrySubject ? 'on' : ''}" onclick="setEntrySubject('${s}')">${s}</button>`).join('')}
     </div>
     <div class="tiny mt12">间隔序列: ${seqFor(state.entrySubject).join(' → ')} 天</div>
-    <label class="form-label">出处（教材名 + 页码/题号）</label>
-    <input type="text" class="form-input" id="entry-source" list="source-suggest" placeholder="例: 青チャートIIB p.123 例题5" enterkeyhint="done">
+    <label class="form-label">${state.entryBoard === 'kakomon' ? '出处（年度/回次 + 题号）' : '出处（教材名 + 页码/题号）'}</label>
+    <input type="text" class="form-input" id="entry-source" list="source-suggest" placeholder="${placeholder}" enterkeyhint="done">
     <datalist id="source-suggest">${sources.map(s => `<option value="${escapeHtml(s)}">`).join('')}</datalist>
     <label class="form-label">备注（可选）</label>
     <input type="text" class="form-input" id="entry-note" placeholder="易错点、思路提示等">
-    <button class="btn block mt12" onclick="addItem()">添加（明天开始复习）</button>
+    <button class="btn block mt12" onclick="addItem()">添加${BOARDS[state.entryBoard]}（明天开始复习）</button>
   </div>`;
   html += `<div class="section-title">今日已录入 (${todayItems.length})</div>`;
   if (!todayItems.length) {
@@ -652,7 +671,7 @@ function renderEntry() {
     html += `<div class="card">` + todayItems.map(i => `<div class="lib-item">
       <div class="lib-main">
         <div class="flex1"><div>${escapeHtml(i.source)}</div>
-          <div class="task-meta"><span class="tag subj">${escapeHtml(i.subject)}</span><span class="tag">首次复习 ${displayDate(i.dueDate)}</span></div>
+          <div class="task-meta"><span class="tag">${BOARDS[i.board]}</span><span class="tag subj">${escapeHtml(i.subject)}</span><span class="tag">首次复习 ${displayDate(i.dueDate)}</span></div>
         </div>
         <button class="btn small secondary" onclick="deleteItem('${i.id}')">删除</button>
       </div>
@@ -664,12 +683,14 @@ function renderEntry() {
 }
 function setEntrySubject(s) { state.entrySubject = s; renderEntry(); }
 window.setEntrySubject = setEntrySubject;
+function setEntryBoard(b) { state.entryBoard = b; renderEntry(); }
+window.setEntryBoard = setEntryBoard;
 
 function addItem() {
   const source = $('#entry-source').value.trim();
   const note = $('#entry-note').value.trim();
   if (!source) { $('#entry-source').focus(); return; }
-  const item = createItem(state.entrySubject, source, note, todayStr());
+  const item = createItem(state.entrySubject, source, note, todayStr(), state.entryBoard);
   state.items.push(item);
   saveItems(state.items);
   render();
@@ -695,20 +716,31 @@ function deleteItem(id) {
 window.deleteItem = deleteItem;
 
 // --- 题库页 ---
-function renderLibrary() {
-  const today = todayStr();
-  const subjects = [...new Set([...SUBJECTS, ...state.items.map(i => i.subject)])];
+function libFilteredItems() {
   let list = state.items.slice();
+  if (state.libBoard !== 'all') list = list.filter(i => i.board === state.libBoard);
   if (state.libSubject !== 'all') list = list.filter(i => i.subject === state.libSubject);
   if (state.libStatus !== 'all') list = list.filter(i => i.status === state.libStatus);
   const q = state.libSearch.trim().toLowerCase();
   if (q) list = list.filter(i => (i.source + ' ' + i.note).toLowerCase().includes(q));
   list.sort((a, b) => a.dueDate < b.dueDate ? -1 : a.dueDate > b.dueDate ? 1 : 0);
+  return list;
+}
+
+function renderLibrary() {
+  const today = todayStr();
+  const subjects = [...new Set([...SUBJECTS, ...state.items.map(i => i.subject)])];
+  const list = libFilteredItems();
 
   let html = `<div class="card">
     <input type="text" class="form-input mb8" placeholder="搜索出处 / 备注" value="${escapeHtml(state.libSearch)}"
       oninput="state.libSearch=this.value; renderLibraryListOnly()">
     <div class="row">
+      <select class="form-input flex1" onchange="state.libBoard=this.value; renderLibrary()">
+        <option value="all">全部类型</option>
+        ${Object.entries(BOARDS).map(([k, label]) =>
+          `<option value="${k}" ${k === state.libBoard ? 'selected' : ''}>${label}</option>`).join('')}
+      </select>
       <select class="form-input flex1" onchange="state.libSubject=this.value; renderLibrary()">
         <option value="all">全部科目</option>
         ${subjects.map(s => `<option value="${escapeHtml(s)}" ${s === state.libSubject ? 'selected' : ''}>${escapeHtml(s)}</option>`).join('')}
@@ -725,15 +757,8 @@ function renderLibrary() {
   $('#main').innerHTML = html;
 }
 function renderLibraryListOnly() {
-  const today = todayStr();
-  let list = state.items.slice();
-  if (state.libSubject !== 'all') list = list.filter(i => i.subject === state.libSubject);
-  if (state.libStatus !== 'all') list = list.filter(i => i.status === state.libStatus);
-  const q = state.libSearch.trim().toLowerCase();
-  if (q) list = list.filter(i => (i.source + ' ' + i.note).toLowerCase().includes(q));
-  list.sort((a, b) => a.dueDate < b.dueDate ? -1 : a.dueDate > b.dueDate ? 1 : 0);
   const el = $('#lib-list');
-  if (el) el.innerHTML = renderLibraryList(list, today);
+  if (el) el.innerHTML = renderLibraryList(libFilteredItems(), todayStr());
 }
 window.renderLibraryListOnly = renderLibraryListOnly;
 
@@ -767,6 +792,7 @@ function renderLibraryList(list, today) {
         <div class="flex1">
           <div>${escapeHtml(i.source)}</div>
           <div class="task-meta">
+            <span class="tag">${BOARDS[i.board]}</span>
             <span class="tag subj">${escapeHtml(i.subject)}</span>
             ${isGrad
               ? `<span class="tag grad">已毕业</span><span class="tag">抽查 ${displayDate(i.dueDate)}</span>`
@@ -820,6 +846,20 @@ function renderStats() {
       <tr><th>科目</th><th class="r">循环中</th><th class="r">已毕业</th><th class="r">合计</th></tr>
       ${rows}
       <tr><td><b>合计</b></td><td class="r"><b>${totalL}</b></td><td class="r"><b>${totalG}</b></td><td class="r"><b>${totalL + totalG}</b></td></tr>
+    </table>
+  </div>`;
+
+  // 母题 / 过去问 分列
+  const boardRows = Object.entries(BOARDS).map(([k, label]) => {
+    const learning = state.items.filter(i => i.board === k && i.status === 'learning').length;
+    const grad = state.items.filter(i => i.board === k && i.status === 'graduated').length;
+    return `<tr><td>${label}</td><td class="r">${learning}</td><td class="r">${grad}</td><td class="r">${learning + grad}</td></tr>`;
+  }).join('');
+  html += `<div class="card">
+    <div class="section-title" style="margin-top:0">母题 / 过去问</div>
+    <table class="stat-table">
+      <tr><th>类型</th><th class="r">循环中</th><th class="r">已毕业</th><th class="r">合计</th></tr>
+      ${boardRows}
     </table>
   </div>`;
 
