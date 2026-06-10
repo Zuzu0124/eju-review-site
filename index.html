@@ -1,1 +1,1140 @@
-<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width,initial-scale=1"><title>EJU Review</title><script>(async()=>{const base='https://raw.githubusercontent.com/Zuzu0124/eju-review-site/36922193b695120b4f88a84e49005e163a546344/index.html';const wrapper=await fetch(base).then(r=>r.text());const b=wrapper.match(/let b='([^']+)'/)[1];const u=Uint8Array.from(atob(b),c=>c.charCodeAt(0));const s=new Blob([u]).stream().pipeThrough(new DecompressionStream('gzip'));let h=await new Response(s).text();const fix=`<script>(()=>{function t(i){const a=[i&&i.updatedAt,i&&i.modifiedAt,i&&i.createdAt,...(Array.isArray(i&&i.reviews)?i.reviews.map(r=>r.completedAt).filter(Boolean):[])];return Math.max(0,...a.map(v=>Date.parse(v||'')||0))}function d(i){return Array.isArray(i&&i.reviews)?i.reviews.filter(r=>r.status==='done').length:0}function pick(l,r){if(!l)return r;if(!r)return l;const lt=t(l),rt=t(r);if(lt!==rt)return lt>rt?l:r;const ld=d(l),rd=d(r);if(ld!==rd)return ld>rd?l:r;return l}window.touchItem=function(i){if(i)i.updatedAt=new Date().toISOString()};applyMergedCloudData=function(remoteData){const remoteItems=Array.isArray(remoteData&&remoteData.items)?remoteData.items.map(normalizeItem).filter(Boolean):[];const byId=new Map();remoteItems.forEach(i=>byId.set(i.id,i));state.items.map(normalizeItem).filter(Boolean).forEach(i=>byId.set(i.id,pick(i,byId.get(i.id))));state.items=Array.from(byId.values());state.settings=loadValidatedSettings((remoteData&&remoteData.settings)||state.settings);state.suggestions=mergeSuggestions(state.suggestions,remoteData&&remoteData.suggestions);suppressCloudSync=true;saveItems(state.items);saveSettings(state.settings);saveSuggestions(state.suggestions);suppressCloudSync=false};const oldComplete=completeReview;completeReview=function(itemId,reviewIndex,quality='good',silent=false){oldComplete(itemId,reviewIndex,quality,silent);const item=state.items.find(i=>i.id===itemId);if(item){touchItem(item);saveItems(state.items)}};window.completeReview=completeReview;const oldPostpone=postponeReview;postponeReview=function(itemId,reviewIndex,days,silent=false){oldPostpone(itemId,reviewIndex,days,silent);const item=state.items.find(i=>i.id===itemId);if(item){touchItem(item);saveItems(state.items)}};window.postponeReview=postponeReview;})();<\/script>`;h=h.replace('</body>',fix+'</body>');document.open();document.write(h);document.close()})();</script>
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EJU 间隔复习</title>
+<style>
+:root {
+  --bg: #f4f5f7;
+  --card: #ffffff;
+  --text: #1c2333;
+  --muted: #6b7280;
+  --line: #e3e6ec;
+  --accent: #2f6fed;
+  --accent-soft: #e8effd;
+  --good: #1a9850;
+  --good-soft: #e4f5ea;
+  --mid: #c98a00;
+  --mid-soft: #fdf3dc;
+  --bad: #d23c3c;
+  --bad-soft: #fdeaea;
+  --grad: #7c5cd6;
+  --grad-soft: #f0ebfc;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  overflow-x: hidden;
+}
+.app { max-width: 560px; margin: 0 auto; padding: 0 12px calc(76px + env(safe-area-inset-bottom)); min-width: 0; }
+.header { padding: 14px 2px 6px; display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.app-title { font-size: 19px; font-weight: 700; }
+.today-date { font-size: 13px; color: var(--muted); }
+
+.nav-bar {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  background: var(--card); border-top: 1px solid var(--line);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.nav-btn {
+  appearance: none; border: 0; background: none; cursor: pointer;
+  padding: 9px 0 7px; font-size: 12px; color: var(--muted);
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  position: relative; min-height: 52px;
+}
+.nav-btn .ico { font-size: 19px; line-height: 1; }
+.nav-btn.active { color: var(--accent); font-weight: 600; }
+.nav-btn .badge {
+  position: absolute; top: 4px; right: calc(50% - 22px);
+  background: var(--bad); color: #fff; font-size: 10px; font-weight: 700;
+  border-radius: 9px; min-width: 17px; height: 17px; line-height: 17px; padding: 0 4px;
+}
+.badge.hidden { display: none; }
+
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px; margin-bottom: 12px; overflow-wrap: anywhere; }
+.section-title { font-size: 13px; font-weight: 700; color: var(--muted); margin: 18px 2px 8px; letter-spacing: .04em; }
+.small { font-size: 13px; color: var(--muted); }
+.tiny { font-size: 12px; color: var(--muted); }
+.mb8 { margin-bottom: 8px; } .mb12 { margin-bottom: 12px; } .mt12 { margin-top: 12px; }
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.flex1 { flex: 1; min-width: 0; }
+.center { text-align: center; }
+
+.btn {
+  appearance: none; border: 0; cursor: pointer; border-radius: 10px;
+  background: var(--accent); color: #fff; font-size: 15px; font-weight: 600;
+  padding: 11px 16px; min-height: 44px;
+}
+.btn:disabled { opacity: .5; }
+.btn.secondary { background: #eceef2; color: var(--text); }
+.btn.danger { background: var(--bad); }
+.btn.small { font-size: 13px; padding: 7px 12px; min-height: 36px; }
+.btn.block { display: block; width: 100%; }
+
+.form-input, select.form-input {
+  width: 100%; border: 1px solid var(--line); border-radius: 10px;
+  padding: 11px 12px; font-size: 16px; background: #fff; color: var(--text);
+  min-height: 44px;
+}
+.form-input:focus { outline: 2px solid var(--accent-soft); border-color: var(--accent); }
+.form-label { display: block; font-size: 13px; font-weight: 600; color: var(--muted); margin: 12px 0 5px; }
+
+.subject-pick { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.subject-pick button {
+  appearance: none; cursor: pointer; border: 1.5px solid var(--line); background: #fff;
+  border-radius: 10px; padding: 11px 6px; font-size: 15px; color: var(--text); min-height: 46px;
+}
+.subject-pick button.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+
+.sticky-summary {
+  position: sticky; top: 0; z-index: 40;
+  background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+  padding: 10px 14px; margin-bottom: 12px; box-shadow: 0 4px 14px rgba(20,30,60,.06);
+}
+.summary-nums { display: flex; gap: 18px; }
+.summary-nums .num { font-size: 22px; font-weight: 800; line-height: 1.1; }
+.summary-nums .lbl { font-size: 11px; color: var(--muted); }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 7px; }
+.chip { font-size: 12px; background: var(--accent-soft); color: var(--accent); border-radius: 999px; padding: 2px 9px; }
+.chip.zero { background: #eceef2; color: var(--muted); }
+
+.task-card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 13px 14px; margin-bottom: 10px; overflow-wrap: anywhere; }
+.task-card.overdue { border-color: #f1b9b9; background: #fffafa; }
+.task-card.gradcheck { border-color: #d8cdf2; background: #fcfaff; }
+.task-top { display: flex; gap: 8px; align-items: flex-start; justify-content: space-between; }
+.task-source { font-size: 16px; font-weight: 650; }
+.task-meta { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 5px; }
+.tag { font-size: 11.5px; border-radius: 6px; padding: 1.5px 7px; background: #eceef2; color: var(--muted); white-space: nowrap; }
+.tag.subj { background: var(--accent-soft); color: var(--accent); }
+.tag.late { background: var(--bad-soft); color: var(--bad); font-weight: 700; }
+.tag.grad { background: var(--grad-soft); color: var(--grad); font-weight: 700; }
+.task-note { font-size: 13px; color: var(--muted); margin-top: 5px; white-space: pre-wrap; }
+.rate-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 11px; }
+.rate-btn {
+  appearance: none; cursor: pointer; border-radius: 12px; border: 1.5px solid transparent;
+  min-height: 56px; font-weight: 800; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 0; padding: 4px;
+}
+.rate-btn .mark { font-size: 22px; line-height: 1.15; }
+.rate-btn .lbl { font-size: 11px; font-weight: 600; }
+.rate-good { background: var(--good-soft); color: var(--good); border-color: #bfe5cc; }
+.rate-mid { background: var(--mid-soft); color: var(--mid); border-color: #efd9a0; }
+.rate-bad { background: var(--bad-soft); color: var(--bad); border-color: #f3c2c2; }
+.rate-btn:active { transform: scale(.97); }
+.group-title { font-size: 14px; font-weight: 700; margin: 16px 2px 8px; }
+.group-title.red { color: var(--bad); }
+.group-title.grad { color: var(--grad); }
+.empty { text-align: center; color: var(--muted); padding: 40px 10px; font-size: 14px; }
+.empty .big { font-size: 34px; margin-bottom: 8px; }
+
+.lib-item { border-top: 1px solid var(--line); padding: 11px 2px; }
+.lib-item:first-child { border-top: 0; }
+.lib-main { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; cursor: pointer; }
+.lib-detail { margin-top: 9px; }
+.hist-list { font-size: 12.5px; color: var(--muted); margin: 8px 0; display: flex; flex-wrap: wrap; gap: 5px; }
+.hist-pill { border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+
+.stat-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.stat-table th, .stat-table td { text-align: left; padding: 7px 4px; border-bottom: 1px solid var(--line); }
+.stat-table th { font-size: 12px; color: var(--muted); font-weight: 600; }
+.stat-table td.r, .stat-table th.r { text-align: right; }
+.bars { display: flex; align-items: flex-end; gap: 2px; height: 90px; margin-top: 10px; }
+.bar-col { flex: 1; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; min-width: 0; }
+.bar { width: 100%; background: var(--accent); border-radius: 3px 3px 0 0; min-height: 2px; }
+.bar.zero { background: #e3e6ec; }
+.bar-x { font-size: 9px; color: var(--muted); margin-top: 3px; }
+
+.toast-wrap { position: fixed; bottom: calc(86px + env(safe-area-inset-bottom)); left: 0; right: 0; display: flex; justify-content: center; z-index: 60; pointer-events: none; }
+.toast {
+  background: #2a3040; color: #fff; border-radius: 12px; padding: 10px 16px;
+  font-size: 14px; display: flex; gap: 14px; align-items: center; max-width: 92%;
+  box-shadow: 0 8px 22px rgba(0,0,0,.25); pointer-events: auto;
+}
+.toast .undo { appearance: none; border: 0; background: none; color: #8ab4ff; font-weight: 700; font-size: 14px; cursor: pointer; padding: 2px 4px; }
+
+.danger-text { color: var(--bad); }
+.hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <span class="app-title">EJU 间隔复习</span>
+    <span class="today-date" id="today-date"></span>
+  </header>
+  <main id="main"></main>
+</div>
+
+<nav class="nav-bar">
+  <button class="nav-btn active" data-view="review"><span class="ico">📋</span>复习<span class="badge hidden" id="due-badge"></span></button>
+  <button class="nav-btn" data-view="entry"><span class="ico">✏️</span>录入</button>
+  <button class="nav-btn" data-view="library"><span class="ico">📚</span>题库</button>
+  <button class="nav-btn" data-view="stats"><span class="ico">📈</span>统计</button>
+  <button class="nav-btn" data-view="data"><span class="ico">💾</span>数据</button>
+</nav>
+
+<div class="toast-wrap" id="toast-wrap"></div>
+<input type="file" id="import-file" accept="application/json,.json" class="hidden">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+'use strict';
+/* ============================================================
+ * EJU 间隔复习 — 单文件应用
+ * 数据: localStorage（eju.items.v2）；旧版 eju.items.v1 自动迁移且保留不动
+ * 调度: 间隔序列 + ○△× 分流 + 毕业月度抽查
+ * ============================================================ */
+
+// ---------- 基础工具 ----------
+const $ = (sel, ctx = document) => ctx.querySelector(sel);
+const $$ = (sel, ctx = document) => Array.from(ctx.querySelectorAll(sel));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// 日期一律使用本地时区的 YYYY-MM-DD 字符串，避免 UTC 跨日 bug
+function formatDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function todayStr() { return formatDate(new Date()); }
+function addDaysStr(dateStr, days) {
+  const d = new Date(dateStr + 'T00:00:00');
+  d.setDate(d.getDate() + days);
+  return formatDate(d);
+}
+function diffDays(aStr, bStr) { // a - b（天）
+  return Math.round((new Date(aStr + 'T00:00:00') - new Date(bStr + 'T00:00:00')) / 86400000);
+}
+function isValidDateStr(s) {
+  return typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s) && !isNaN(new Date(s + 'T00:00:00'));
+}
+function displayDate(dateStr) {
+  if (!isValidDateStr(dateStr)) return dateStr || '-';
+  const d = new Date(dateStr + 'T00:00:00');
+  const dow = ['日', '一', '二', '三', '四', '五', '六'][d.getDay()];
+  return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}(${dow})`;
+}
+
+// ---------- 常量 ----------
+const KEYS = {
+  ITEMS: 'eju.items.v2',
+  LEGACY_ITEMS: 'eju.items.v1',
+  MIGRATED_FLAG: 'eju.migrated.v1to2',
+};
+const SUBJECTS = ['数学', '物理', '化学-理论', '化学-记忆'];
+const SEQ_PROCEDURAL = [1, 3, 7, 14, 30];   // 程序性：数学 / 物理 / 化学-理论
+const SEQ_MEMORY = [1, 2, 4, 7, 14, 30];    // 记忆性：化学-记忆
+const GRAD_CYCLE_DAYS = 30;                 // 毕业后抽查周期
+const GRAD_DEMOTE_DAYS = 7;                 // 抽查评 × 后降回的档位天数
+const RATINGS = ['○', '△', '×'];
+
+function isMemorySubject(subject) {
+  return /记忆|記憶|暗記/.test(String(subject || ''));
+}
+function seqFor(subject) {
+  return isMemorySubject(subject) ? SEQ_MEMORY : SEQ_PROCEDURAL;
+}
+
+// ---------- 存取 ----------
+function loadJSON(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch (e) {
+    console.error('Load error:', key, e);
+    return fallback;
+  }
+}
+let suppressCloudSync = false;
+function saveItems(items) {
+  try {
+    localStorage.setItem(KEYS.ITEMS, JSON.stringify(items));
+    if (!suppressCloudSync) scheduleCloudPush();
+  } catch (e) {
+    console.error('Save error:', e);
+    alert('保存失败: ' + e.message);
+  }
+}
+
+// ---------- 数据结构 / 迁移 ----------
+// v2 题目: { id, subject, source, note, addedDate, intervalIndex, dueDate,
+//            history:[{date, rating}], status:'learning'|'graduated', updatedAt, legacy? }
+
+// 缺字段时补默认值（已有题目默认 intervalIndex=0、status=learning、dueDate=明天）
+function normalizeItem(item) {
+  if (!item || typeof item !== 'object' || !item.id) return null;
+  const subject = typeof item.subject === 'string' && item.subject ? item.subject : '数学';
+  const seq = seqFor(subject);
+  const status = item.status === 'graduated' ? 'graduated' : 'learning';
+  let intervalIndex = Number.isInteger(item.intervalIndex) ? item.intervalIndex : 0;
+  intervalIndex = Math.max(0, Math.min(seq.length - 1, intervalIndex));
+  const history = Array.isArray(item.history)
+    ? item.history
+        .filter(h => h && isValidDateStr(h.date) && RATINGS.includes(h.rating))
+        .map(h => ({ date: h.date, rating: h.rating }))
+    : [];
+  const out = {
+    id: String(item.id),
+    subject,
+    source: typeof item.source === 'string' ? item.source : '',
+    note: typeof item.note === 'string' ? item.note : '',
+    addedDate: isValidDateStr(item.addedDate) ? item.addedDate : todayStr(),
+    intervalIndex,
+    dueDate: isValidDateStr(item.dueDate) ? item.dueDate : addDaysStr(todayStr(), 1),
+    history,
+    status,
+    updatedAt: typeof item.updatedAt === 'string' ? item.updatedAt : new Date().toISOString(),
+  };
+  if (item.legacy && typeof item.legacy === 'object') out.legacy = item.legacy;
+  return out;
+}
+
+function isLegacyV1Item(item) {
+  return item && typeof item === 'object' && Array.isArray(item.reviews) &&
+    item.intervalIndex === undefined && item.dueDate === undefined;
+}
+
+// v1（reviews 数组排期制）→ v2。原始字段完整保留在 legacy 中，绝不丢数据。
+function migrateLegacyItem(old, today) {
+  const qualityMap = { good: '○', unsure: '△', again: '×' };
+  const history = (old.reviews || [])
+    .filter(r => r && r.status === 'done' && r.completedAt)
+    .map(r => ({ date: String(r.completedAt).slice(0, 10), rating: qualityMap[r.quality] || '△' }))
+    .filter(h => isValidDateStr(h.date))
+    .sort((a, b) => a.date < b.date ? -1 : 1);
+  const source = [old.source, old.location, old.questionNo].filter(Boolean).join(' ').trim();
+  return normalizeItem({
+    id: old.id,
+    subject: old.subject || '未分类',
+    source: source || '(无出处)',
+    note: old.note || '',
+    addedDate: isValidDateStr((old.createdAt || '').slice(0, 10)) ? old.createdAt.slice(0, 10) : today,
+    intervalIndex: 0,
+    dueDate: addDaysStr(today, 1),
+    history,
+    status: 'learning',
+    updatedAt: old.updatedAt || old.createdAt || new Date().toISOString(),
+    legacy: {
+      board: old.board, difficulty: old.difficulty, source: old.source,
+      location: old.location, questionNo: old.questionNo, mastery: old.mastery,
+      createdAt: old.createdAt, reviews: old.reviews,
+    },
+  });
+}
+
+function migrateAnyItem(item, today) {
+  if (isLegacyV1Item(item)) return migrateLegacyItem(item, today);
+  return normalizeItem(item);
+}
+
+// 页面加载时迁移。旧 key eju.items.v1 原样保留，作为永久备份。
+function loadAndMigrateItems() {
+  const today = todayStr();
+  const v2 = loadJSON(KEYS.ITEMS, null);
+  if (Array.isArray(v2)) {
+    return v2.map(it => migrateAnyItem(it, today)).filter(Boolean);
+  }
+  const v1 = loadJSON(KEYS.LEGACY_ITEMS, null);
+  if (Array.isArray(v1) && v1.length) {
+    const migrated = v1.map(it => migrateAnyItem(it, today)).filter(Boolean);
+    try { localStorage.setItem(KEYS.MIGRATED_FLAG, new Date().toISOString()); } catch (e) {}
+    return migrated;
+  }
+  return [];
+}
+
+// ---------- 核心调度逻辑 ----------
+// ○: intervalIndex+1（最后一档→毕业）；△: 档位不变；×: 归零、明天再来
+// 毕业题: 每 30 天抽查；抽查 × → 降回 learning 的 7 天档
+function applyRating(item, rating, today) {
+  const seq = seqFor(item.subject);
+  item.history.push({ date: today, rating });
+  if (item.status === 'graduated') {
+    if (rating === '×') {
+      item.status = 'learning';
+      const idx = seq.indexOf(GRAD_DEMOTE_DAYS);
+      item.intervalIndex = idx >= 0 ? idx : seq.length - 2;
+      item.dueDate = addDaysStr(today, seq[item.intervalIndex]);
+    } else {
+      item.dueDate = addDaysStr(today, GRAD_CYCLE_DAYS);
+    }
+  } else if (rating === '○') {
+    if (item.intervalIndex >= seq.length - 1) {
+      item.status = 'graduated';
+      item.dueDate = addDaysStr(today, GRAD_CYCLE_DAYS);
+    } else {
+      item.intervalIndex += 1;
+      item.dueDate = addDaysStr(today, seq[item.intervalIndex]);
+    }
+  } else if (rating === '△') {
+    item.dueDate = addDaysStr(today, seq[item.intervalIndex]);
+  } else { // ×
+    item.intervalIndex = 0;
+    item.dueDate = addDaysStr(today, 1);
+  }
+  item.updatedAt = new Date().toISOString();
+  return item;
+}
+
+function createItem(subject, source, note, today) {
+  const seq = seqFor(subject);
+  return {
+    id: uid(),
+    subject,
+    source: source.trim(),
+    note: (note || '').trim(),
+    addedDate: today,
+    intervalIndex: 0,
+    dueDate: addDaysStr(today, seq[0]),
+    history: [],
+    status: 'learning',
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+// 今日任务: learning 到期题（逾期在前）+ 毕业抽查题（随机序，列表末尾）
+function getDueTasks(items, today) {
+  const learning = items.filter(i => i.status === 'learning' && i.dueDate <= today);
+  const overdue = learning.filter(i => i.dueDate < today)
+    .sort((a, b) => a.dueDate < b.dueDate ? -1 : a.dueDate > b.dueDate ? 1 : 0);
+  const dueToday = learning.filter(i => i.dueDate === today);
+  const gradChecks = shuffle(items.filter(i => i.status === 'graduated' && i.dueDate <= today));
+  return { overdue, dueToday, gradChecks };
+}
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+function completedCountOn(items, dateStr) {
+  return items.reduce((n, i) => n + i.history.filter(h => h.date === dateStr).length, 0);
+}
+function groupBySubject(list) {
+  const map = new Map();
+  for (const it of list) {
+    if (!map.has(it.subject)) map.set(it.subject, []);
+    map.get(it.subject).push(it);
+  }
+  return map;
+}
+
+// ---------- 应用状态 ----------
+const state = {
+  view: 'review',
+  items: [],
+  entrySubject: SUBJECTS[0],
+  libSubject: 'all',
+  libStatus: 'all',
+  libSearch: '',
+  libExpanded: new Set(),
+  // 今日抽查题的随机顺序在当天内保持稳定
+  gradOrderDate: '',
+  gradOrder: [],
+  sync: {
+    available: false,
+    user: null,
+    email: '',
+    status: '未登录',
+    lastSynced: null,
+    busy: false,
+  },
+};
+let toastTimer = null;
+let cloudPushTimer = null;
+let pendingImport = null;
+
+// ---------- 渲染 ----------
+function render() {
+  updateBadge();
+  $$('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === state.view));
+  switch (state.view) {
+    case 'review': renderReview(); break;
+    case 'entry': renderEntry(); break;
+    case 'library': renderLibrary(); break;
+    case 'stats': renderStats(); break;
+    case 'data': renderData(); break;
+  }
+}
+function navigate(view) {
+  state.view = view;
+  render();
+}
+function updateBadge() {
+  const today = todayStr();
+  const { overdue, dueToday, gradChecks } = getDueTasks(state.items, today);
+  const n = overdue.length + dueToday.length + gradChecks.length;
+  const badge = $('#due-badge');
+  if (!badge) return;
+  badge.textContent = n;
+  badge.classList.toggle('hidden', n === 0);
+}
+
+// --- 复习页 ---
+function stableGradOrder(gradChecks, today) {
+  if (state.gradOrderDate !== today) {
+    state.gradOrderDate = today;
+    state.gradOrder = gradChecks.map(i => i.id);
+  } else {
+    const known = new Set(state.gradOrder);
+    gradChecks.forEach(i => { if (!known.has(i.id)) state.gradOrder.push(i.id); });
+  }
+  const pos = new Map(state.gradOrder.map((id, idx) => [id, idx]));
+  return gradChecks.slice().sort((a, b) => (pos.get(a.id) ?? 0) - (pos.get(b.id) ?? 0));
+}
+
+function renderReview() {
+  const today = todayStr();
+  const { overdue, dueToday, gradChecks } = getDueTasks(state.items, today);
+  const gradOrdered = stableGradOrder(gradChecks, today);
+  const remaining = overdue.length + dueToday.length + gradOrdered.length;
+  const done = completedCountOn(state.items, today);
+  const total = remaining + done;
+
+  const allPending = [...overdue, ...dueToday, ...gradOrdered];
+  const bySubj = groupBySubject(allPending);
+  const chips = SUBJECTS.concat([...bySubj.keys()].filter(s => !SUBJECTS.includes(s)))
+    .map(s => {
+      const n = (bySubj.get(s) || []).length;
+      if (!SUBJECTS.includes(s) && n === 0) return '';
+      return `<span class="chip ${n === 0 ? 'zero' : ''}">${escapeHtml(s)} ${n}</span>`;
+    }).join('');
+
+  let html = `<div class="sticky-summary">
+    <div class="summary-nums">
+      <div><div class="num">${total}</div><div class="lbl">今日待复习</div></div>
+      <div><div class="num" style="color:var(--good)">${done}</div><div class="lbl">已完成</div></div>
+      <div><div class="num" style="color:${remaining ? 'var(--accent)' : 'var(--muted)'}">${remaining}</div><div class="lbl">剩余</div></div>
+    </div>
+    <div class="chips">${chips}</div>
+  </div>`;
+
+  if (remaining === 0) {
+    html += `<div class="empty"><div class="big">${done > 0 ? '🎉' : '☀️'}</div>${
+      done > 0 ? `今天的 ${done} 题已全部完成！` : '今天没有待复习的题目'}</div>`;
+    $('#main').innerHTML = html;
+    return;
+  }
+
+  if (overdue.length) {
+    html += `<div class="group-title red">⚠️ 逾期 (${overdue.length})</div>`;
+    for (const [subj, list] of groupBySubject(overdue)) {
+      html += `<div class="tiny mb8" style="margin-left:2px">${escapeHtml(subj)}</div>`;
+      html += list.map(i => taskCard(i, today)).join('');
+    }
+  }
+  if (dueToday.length) {
+    html += `<div class="group-title">今日到期 (${dueToday.length})</div>`;
+    for (const [subj, list] of groupBySubject(dueToday)) {
+      html += `<div class="tiny mb8" style="margin-left:2px">${escapeHtml(subj)}</div>`;
+      html += list.map(i => taskCard(i, today)).join('');
+    }
+  }
+  if (gradOrdered.length) {
+    html += `<div class="group-title grad">🎓 月度抽查 (${gradOrdered.length})</div>`;
+    html += gradOrdered.map(i => taskCard(i, today)).join('');
+  }
+  $('#main').innerHTML = html;
+}
+
+function taskCard(item, today) {
+  const seq = seqFor(item.subject);
+  const isGrad = item.status === 'graduated';
+  const late = !isGrad && item.dueDate < today ? diffDays(today, item.dueDate) : 0;
+  const stage = isGrad
+    ? `<span class="tag grad">已毕业 · 抽查</span>`
+    : `<span class="tag">档位 ${item.intervalIndex + 1}/${seq.length} · ${seq[item.intervalIndex]}天</span>`;
+  return `<div class="task-card ${late ? 'overdue' : ''} ${isGrad ? 'gradcheck' : ''}">
+    <div class="task-top"><div class="task-source">${escapeHtml(item.source)}</div></div>
+    <div class="task-meta">
+      <span class="tag subj">${escapeHtml(item.subject)}</span>
+      ${stage}
+      ${late ? `<span class="tag late">逾期 ${late} 天</span>` : ''}
+    </div>
+    ${item.note ? `<div class="task-note">${escapeHtml(item.note)}</div>` : ''}
+    <div class="rate-row">
+      <button class="rate-btn rate-good" onclick="rateItem('${item.id}','○')"><span class="mark">○</span><span class="lbl">秒杀</span></button>
+      <button class="rate-btn rate-mid" onclick="rateItem('${item.id}','△')"><span class="mark">△</span><span class="lbl">想起但慢</span></button>
+      <button class="rate-btn rate-bad" onclick="rateItem('${item.id}','×')"><span class="mark">×</span><span class="lbl">没思路</span></button>
+    </div>
+  </div>`;
+}
+
+function rateItem(id, rating) {
+  const item = state.items.find(i => i.id === id);
+  if (!item) return;
+  const before = JSON.parse(JSON.stringify(item));
+  const today = todayStr();
+  applyRating(item, rating, today);
+  saveItems(state.items);
+  render();
+  const seq = seqFor(item.subject);
+  let msg;
+  if (item.status === 'graduated' && before.status === 'learning') msg = `🎓 已毕业！30 天后抽查`;
+  else if (item.status === 'graduated') msg = `抽查通过，30 天后再见`;
+  else if (rating === '×') msg = `已重置，明天再来`;
+  else msg = `下次复习: ${seq[item.intervalIndex]} 天后`;
+  showToast(`${rating} ${msg}`, () => {
+    Object.assign(item, before);
+    saveItems(state.items);
+    render();
+  });
+}
+window.rateItem = rateItem;
+
+// --- 录入页 ---
+function renderEntry() {
+  const today = todayStr();
+  const todayItems = state.items.filter(i => i.addedDate === today)
+    .sort((a, b) => b.updatedAt < a.updatedAt ? -1 : 1);
+  const sources = [...new Set(state.items.filter(i => i.subject === state.entrySubject).map(i => i.source))].slice(0, 50);
+  let html = `<div class="card">
+    <label class="form-label" style="margin-top:0">科目</label>
+    <div class="subject-pick">${SUBJECTS.map(s =>
+      `<button class="${s === state.entrySubject ? 'on' : ''}" onclick="setEntrySubject('${s}')">${s}</button>`).join('')}
+    </div>
+    <div class="tiny mt12">间隔序列: ${seqFor(state.entrySubject).join(' → ')} 天</div>
+    <label class="form-label">出处（教材名 + 页码/题号）</label>
+    <input type="text" class="form-input" id="entry-source" list="source-suggest" placeholder="例: 青チャートIIB p.123 例题5" enterkeyhint="done">
+    <datalist id="source-suggest">${sources.map(s => `<option value="${escapeHtml(s)}">`).join('')}</datalist>
+    <label class="form-label">备注（可选）</label>
+    <input type="text" class="form-input" id="entry-note" placeholder="易错点、思路提示等">
+    <button class="btn block mt12" onclick="addItem()">添加（明天开始复习）</button>
+  </div>`;
+  html += `<div class="section-title">今日已录入 (${todayItems.length})</div>`;
+  if (!todayItems.length) {
+    html += `<div class="card small center">还没有录入题目</div>`;
+  } else {
+    html += `<div class="card">` + todayItems.map(i => `<div class="lib-item">
+      <div class="lib-main">
+        <div class="flex1"><div>${escapeHtml(i.source)}</div>
+          <div class="task-meta"><span class="tag subj">${escapeHtml(i.subject)}</span><span class="tag">首次复习 ${displayDate(i.dueDate)}</span></div>
+        </div>
+        <button class="btn small secondary" onclick="deleteItem('${i.id}')">删除</button>
+      </div>
+    </div>`).join('') + `</div>`;
+  }
+  $('#main').innerHTML = html;
+  const input = $('#entry-source');
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') addItem(); });
+}
+function setEntrySubject(s) { state.entrySubject = s; renderEntry(); }
+window.setEntrySubject = setEntrySubject;
+
+function addItem() {
+  const source = $('#entry-source').value.trim();
+  const note = $('#entry-note').value.trim();
+  if (!source) { $('#entry-source').focus(); return; }
+  const item = createItem(state.entrySubject, source, note, todayStr());
+  state.items.push(item);
+  saveItems(state.items);
+  render();
+  showToast(`已添加，${displayDate(item.dueDate)} 首次复习`);
+  $('#entry-source')?.focus();
+}
+window.addItem = addItem;
+
+function deleteItem(id) {
+  const idx = state.items.findIndex(i => i.id === id);
+  if (idx < 0) return;
+  const removed = state.items[idx];
+  if (!confirm(`删除「${removed.source}」？`)) return;
+  state.items.splice(idx, 1);
+  saveItems(state.items);
+  render();
+  showToast('已删除', () => {
+    state.items.push(removed);
+    saveItems(state.items);
+    render();
+  });
+}
+window.deleteItem = deleteItem;
+
+// --- 题库页 ---
+function renderLibrary() {
+  const today = todayStr();
+  const subjects = [...new Set([...SUBJECTS, ...state.items.map(i => i.subject)])];
+  let list = state.items.slice();
+  if (state.libSubject !== 'all') list = list.filter(i => i.subject === state.libSubject);
+  if (state.libStatus !== 'all') list = list.filter(i => i.status === state.libStatus);
+  const q = state.libSearch.trim().toLowerCase();
+  if (q) list = list.filter(i => (i.source + ' ' + i.note).toLowerCase().includes(q));
+  list.sort((a, b) => a.dueDate < b.dueDate ? -1 : a.dueDate > b.dueDate ? 1 : 0);
+
+  let html = `<div class="card">
+    <input type="text" class="form-input mb8" placeholder="搜索出处 / 备注" value="${escapeHtml(state.libSearch)}"
+      oninput="state.libSearch=this.value; renderLibraryListOnly()">
+    <div class="row">
+      <select class="form-input flex1" onchange="state.libSubject=this.value; renderLibrary()">
+        <option value="all">全部科目</option>
+        ${subjects.map(s => `<option value="${escapeHtml(s)}" ${s === state.libSubject ? 'selected' : ''}>${escapeHtml(s)}</option>`).join('')}
+      </select>
+      <select class="form-input flex1" onchange="state.libStatus=this.value; renderLibrary()">
+        <option value="all">全部状态</option>
+        <option value="learning" ${state.libStatus === 'learning' ? 'selected' : ''}>循环中</option>
+        <option value="graduated" ${state.libStatus === 'graduated' ? 'selected' : ''}>已毕业</option>
+      </select>
+    </div>
+  </div>
+  <div class="section-title">共 ${list.length} 题</div>
+  <div class="card" id="lib-list">${renderLibraryList(list, today)}</div>`;
+  $('#main').innerHTML = html;
+}
+function renderLibraryListOnly() {
+  const today = todayStr();
+  let list = state.items.slice();
+  if (state.libSubject !== 'all') list = list.filter(i => i.subject === state.libSubject);
+  if (state.libStatus !== 'all') list = list.filter(i => i.status === state.libStatus);
+  const q = state.libSearch.trim().toLowerCase();
+  if (q) list = list.filter(i => (i.source + ' ' + i.note).toLowerCase().includes(q));
+  list.sort((a, b) => a.dueDate < b.dueDate ? -1 : a.dueDate > b.dueDate ? 1 : 0);
+  const el = $('#lib-list');
+  if (el) el.innerHTML = renderLibraryList(list, today);
+}
+window.renderLibraryListOnly = renderLibraryListOnly;
+
+function renderLibraryList(list, today) {
+  if (!list.length) return `<div class="small center" style="padding:18px 0">没有符合条件的题目</div>`;
+  return list.map(i => {
+    const seq = seqFor(i.subject);
+    const isGrad = i.status === 'graduated';
+    const late = !isGrad && i.dueDate < today ? diffDays(today, i.dueDate) : 0;
+    const expanded = state.libExpanded.has(i.id);
+    let detail = '';
+    if (expanded) {
+      const hist = i.history.length
+        ? i.history.slice().reverse().map(h => `<span class="hist-pill">${h.date} ${h.rating}</span>`).join('')
+        : '<span class="tiny">暂无复习记录</span>';
+      detail = `<div class="lib-detail">
+        <div class="tiny">录入: ${displayDate(i.addedDate)} · 复习 ${i.history.length} 次</div>
+        <div class="hist-list">${hist}</div>
+        <label class="form-label">出处</label>
+        <input type="text" class="form-input" id="edit-source-${i.id}" value="${escapeHtml(i.source)}">
+        <label class="form-label">备注</label>
+        <input type="text" class="form-input" id="edit-note-${i.id}" value="${escapeHtml(i.note)}">
+        <div class="row mt12">
+          <button class="btn small" onclick="saveItemEdit('${i.id}')">保存修改</button>
+          <button class="btn small danger" onclick="deleteItem('${i.id}')">删除</button>
+        </div>
+      </div>`;
+    }
+    return `<div class="lib-item">
+      <div class="lib-main" onclick="toggleLibItem('${i.id}')">
+        <div class="flex1">
+          <div>${escapeHtml(i.source)}</div>
+          <div class="task-meta">
+            <span class="tag subj">${escapeHtml(i.subject)}</span>
+            ${isGrad
+              ? `<span class="tag grad">已毕业</span><span class="tag">抽查 ${displayDate(i.dueDate)}</span>`
+              : `<span class="tag">档位 ${i.intervalIndex + 1}/${seq.length}</span><span class="tag ${late ? 'late' : ''}">${late ? `逾期 ${late} 天` : displayDate(i.dueDate)}</span>`}
+          </div>
+        </div>
+        <span class="tiny" style="padding-top:3px">${expanded ? '▲' : '▼'}</span>
+      </div>
+      ${detail}
+    </div>`;
+  }).join('');
+}
+function toggleLibItem(id) {
+  if (state.libExpanded.has(id)) state.libExpanded.delete(id);
+  else state.libExpanded.add(id);
+  renderLibrary();
+}
+window.toggleLibItem = toggleLibItem;
+function saveItemEdit(id) {
+  const item = state.items.find(i => i.id === id);
+  if (!item) return;
+  const source = $(`#edit-source-${id}`)?.value.trim();
+  const note = $(`#edit-note-${id}`)?.value.trim();
+  if (!source) { alert('出处不能为空'); return; }
+  item.source = source;
+  item.note = note || '';
+  item.updatedAt = new Date().toISOString();
+  saveItems(state.items);
+  renderLibrary();
+  showToast('已保存');
+}
+window.saveItemEdit = saveItemEdit;
+
+// --- 统计页 ---
+function renderStats() {
+  const today = todayStr();
+  const subjects = [...new Set([...SUBJECTS, ...state.items.map(i => i.subject)])];
+
+  // 各科目 learning / graduated 数量
+  let rows = subjects.map(s => {
+    const learning = state.items.filter(i => i.subject === s && i.status === 'learning').length;
+    const grad = state.items.filter(i => i.subject === s && i.status === 'graduated').length;
+    if (!SUBJECTS.includes(s) && learning + grad === 0) return '';
+    return `<tr><td>${escapeHtml(s)}</td><td class="r">${learning}</td><td class="r">${grad}</td><td class="r">${learning + grad}</td></tr>`;
+  }).join('');
+  const totalL = state.items.filter(i => i.status === 'learning').length;
+  const totalG = state.items.filter(i => i.status === 'graduated').length;
+  let html = `<div class="card">
+    <div class="section-title" style="margin-top:0">各科目题量</div>
+    <table class="stat-table">
+      <tr><th>科目</th><th class="r">循环中</th><th class="r">已毕业</th><th class="r">合计</th></tr>
+      ${rows}
+      <tr><td><b>合计</b></td><td class="r"><b>${totalL}</b></td><td class="r"><b>${totalG}</b></td><td class="r"><b>${totalL + totalG}</b></td></tr>
+    </table>
+  </div>`;
+
+  // 最近 30 天每日完成题数
+  const days = [];
+  for (let d = 29; d >= 0; d--) days.push(addDaysStr(today, -d));
+  const counts = days.map(d => completedCountOn(state.items, d));
+  const max = Math.max(1, ...counts);
+  html += `<div class="card">
+    <div class="section-title" style="margin-top:0">最近 30 天每日完成题数</div>
+    <div class="bars">${days.map((d, i) => `<div class="bar-col" title="${d}: ${counts[i]}题">
+      <div class="bar ${counts[i] === 0 ? 'zero' : ''}" style="height:${Math.max(2, Math.round(counts[i] / max * 84))}px"></div>
+      ${i % 7 === 0 || i === 29 ? `<div class="bar-x">${d.slice(5).replace('-', '/')}</div>` : '<div class="bar-x">&nbsp;</div>'}
+    </div>`).join('')}</div>
+    <div class="tiny mt12 center">最近 30 天共完成 ${counts.reduce((a, b) => a + b, 0)} 题次 · 单日最高 ${Math.max(0, ...counts)} 题</div>
+  </div>`;
+
+  // 最近 7 天 ○ 率（按科目）
+  const weekStart = addDaysStr(today, -6);
+  const rateRows = subjects.map(s => {
+    const ratings = state.items.filter(i => i.subject === s)
+      .flatMap(i => i.history)
+      .filter(h => h.date >= weekStart && h.date <= today);
+    if (!ratings.length) {
+      return SUBJECTS.includes(s)
+        ? `<tr><td>${escapeHtml(s)}</td><td class="r">-</td><td class="r">0</td></tr>` : '';
+    }
+    const good = ratings.filter(h => h.rating === '○').length;
+    return `<tr><td>${escapeHtml(s)}</td><td class="r"><b>${Math.round(good / ratings.length * 100)}%</b></td><td class="r">${good}/${ratings.length}</td></tr>`;
+  }).join('');
+  html += `<div class="card">
+    <div class="section-title" style="margin-top:0">最近 7 天 ○ 率</div>
+    <table class="stat-table">
+      <tr><th>科目</th><th class="r">○ 率</th><th class="r">○/全部</th></tr>
+      ${rateRows}
+    </table>
+  </div>`;
+  $('#main').innerHTML = html;
+}
+
+// --- 数据页 ---
+function renderData() {
+  const migrated = localStorage.getItem(KEYS.MIGRATED_FLAG);
+  let html = `<div class="card">
+    <div class="section-title" style="margin-top:0">备份与迁移</div>
+    <div class="small mb12">导出 JSON 可用于备份或换设备。导入时可选择合并或覆盖。</div>
+    <div class="row">
+      <button class="btn flex1" onclick="exportData()">导出 JSON</button>
+      <button class="btn flex1 secondary" onclick="document.getElementById('import-file').click()">导入 JSON</button>
+    </div>
+    ${migrated ? `<div class="tiny mt12">已从旧版数据自动迁移（${migrated.slice(0, 10)}）。旧数据仍保留在本机 localStorage 的 eju.items.v1 中，未做改动。</div>` : ''}
+  </div>`;
+  html += renderSyncCard();
+  html += `<div class="card" style="border-color:#f3c2c2">
+    <div class="section-title" style="margin-top:0;color:var(--bad)">危险操作</div>
+    <button class="btn block danger" onclick="clearAllData()">删除全部数据</button>
+  </div>
+  <div class="tiny center mt12">所有数据保存在本浏览器的 localStorage 中</div>`;
+  $('#main').innerHTML = html;
+}
+
+function exportData() {
+  const data = {
+    app: 'eju-review',
+    version: 3,
+    exportedAt: new Date().toISOString(),
+    items: state.items,
+  };
+  downloadText(`eju-review-backup-${todayStr().replace(/-/g, '')}.json`,
+    JSON.stringify(data, null, 2), 'application/json');
+  showToast('已导出 JSON');
+}
+window.exportData = exportData;
+
+function downloadText(filename, text, type) {
+  const blob = new Blob([text], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function onImportFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data || !Array.isArray(data.items)) { alert('无效的备份文件'); return; }
+      const today = todayStr();
+      const incoming = data.items.map(it => migrateAnyItem(it, today)).filter(Boolean);
+      pendingImport = incoming;
+      const mode = confirm(`读取到 ${incoming.length} 题。\n\n「确定」= 合并（按 ID 去重，保留较新一方）\n「取消」= 完全覆盖现有数据`);
+      doImport(mode ? 'merge' : 'overwrite');
+    } catch (err) {
+      alert('文件读取失败:\n' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function doImport(mode) {
+  if (!pendingImport) return;
+  const incoming = pendingImport;
+  pendingImport = null;
+  if (mode === 'overwrite') {
+    if (!confirm('将覆盖现有全部数据，无法撤销。确定吗？')) return;
+    state.items = incoming;
+  } else {
+    const byId = new Map(state.items.map(i => [i.id, i]));
+    incoming.forEach(i => byId.set(i.id, pickNewer(byId.get(i.id), i)));
+    state.items = [...byId.values()];
+  }
+  saveItems(state.items);
+  render();
+  showToast(`导入完成，共 ${state.items.length} 题`);
+}
+
+function clearAllData() {
+  if (!confirm('将删除全部数据（含旧版备份），无法恢复。\n建议先导出 JSON。确定吗？')) return;
+  if (!confirm('最终确认: 真的删除全部数据？')) return;
+  localStorage.removeItem(KEYS.ITEMS);
+  localStorage.removeItem(KEYS.LEGACY_ITEMS);
+  localStorage.removeItem(KEYS.MIGRATED_FLAG);
+  state.items = [];
+  showToast('已删除全部数据');
+  navigate('review');
+}
+window.clearAllData = clearAllData;
+
+// ---------- 云同步（Supabase，延续旧版账号体系） ----------
+const SUPABASE_URL = 'https://uqfzxrwlakmyipgxckyr.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_iLdWO1juWmX4zvIYB3svXA_TSe2QCzd';
+const supabaseClient = (typeof window !== 'undefined' && window.supabase)
+  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
+  : null;
+
+function itemTouchTime(i) {
+  return Math.max(0, Date.parse(i?.updatedAt || '') || 0,
+    ...(Array.isArray(i?.history) ? i.history.map(h => Date.parse(h.date) || 0) : [0]));
+}
+function pickNewer(a, b) {
+  if (!a) return b;
+  if (!b) return a;
+  const ta = itemTouchTime(a), tb = itemTouchTime(b);
+  if (ta !== tb) return ta > tb ? a : b;
+  const ha = a.history?.length || 0, hb = b.history?.length || 0;
+  return hb > ha ? b : a;
+}
+function applyMergedCloudData(remoteData) {
+  const today = todayStr();
+  const remoteItems = Array.isArray(remoteData?.items)
+    ? remoteData.items.map(it => migrateAnyItem(it, today)).filter(Boolean)
+    : [];
+  const byId = new Map(remoteItems.map(i => [i.id, i]));
+  state.items.forEach(i => byId.set(i.id, pickNewer(i, byId.get(i.id))));
+  state.items = [...byId.values()];
+  suppressCloudSync = true;
+  saveItems(state.items);
+  suppressCloudSync = false;
+}
+function cloudDataPayload() {
+  return { version: 3, savedAt: new Date().toISOString(), items: state.items };
+}
+function setSyncStatus(msg, busy = false) {
+  state.sync.status = msg;
+  state.sync.busy = busy;
+  if (state.view === 'data') renderData();
+}
+function scheduleCloudPush() {
+  if (!supabaseClient || !state.sync.user) return;
+  clearTimeout(cloudPushTimer);
+  cloudPushTimer = setTimeout(() => pushCloudData(true), 1200);
+}
+function cloudErrorMessage(error) {
+  if (!error) return '未知错误';
+  return error.message || String(error);
+}
+async function initCloudSync() {
+  if (!supabaseClient) return;
+  state.sync.available = true;
+  try {
+    const { data, error } = await supabaseClient.auth.getSession();
+    if (error) throw error;
+    const session = data?.session;
+    state.sync.user = session?.user || null;
+    state.sync.email = session?.user?.email || '';
+    state.sync.status = state.sync.user ? '已登录' : '未登录';
+    if (state.sync.user) await pullCloudData(true);
+    supabaseClient.auth.onAuthStateChange(async (_event, session2) => {
+      state.sync.user = session2?.user || null;
+      state.sync.email = session2?.user?.email || '';
+      state.sync.status = state.sync.user ? '已登录' : '未登录';
+      if (state.sync.user) await pullCloudData(true);
+      else if (state.view === 'data') renderData();
+    });
+  } catch (error) {
+    state.sync.status = cloudErrorMessage(error);
+    if (state.view === 'data') renderData();
+  }
+}
+async function cloudSignUp() {
+  if (!supabaseClient) return alert('同步库未能加载');
+  const email = $('#sync-email')?.value.trim();
+  const password = $('#sync-password')?.value;
+  if (!email || !password) return alert('请输入邮箱和密码');
+  setSyncStatus('注册中...', true);
+  const { error } = await supabaseClient.auth.signUp({ email, password });
+  if (error) return setSyncStatus(cloudErrorMessage(error));
+  setSyncStatus('已注册。若收到确认邮件请先确认再登录');
+}
+async function cloudSignIn() {
+  if (!supabaseClient) return alert('同步库未能加载');
+  const email = $('#sync-email')?.value.trim();
+  const password = $('#sync-password')?.value;
+  if (!email || !password) return alert('请输入邮箱和密码');
+  setSyncStatus('登录中...', true);
+  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  if (error) return setSyncStatus(cloudErrorMessage(error));
+  state.sync.user = data.user;
+  state.sync.email = data.user?.email || email;
+  await pullCloudData(true);
+}
+async function cloudSignOut() {
+  if (!supabaseClient) return;
+  await supabaseClient.auth.signOut();
+  state.sync.user = null;
+  state.sync.email = '';
+  setSyncStatus('已退出登录');
+}
+async function pullCloudData(silent = false) {
+  if (!supabaseClient || !state.sync.user) return;
+  if (!silent) setSyncStatus('正在从云端同步...', true);
+  const { data, error } = await supabaseClient
+    .from('eju_sync')
+    .select('data,updated_at')
+    .eq('user_id', state.sync.user.id)
+    .maybeSingle();
+  if (error) return setSyncStatus(cloudErrorMessage(error));
+  if (data?.data) {
+    applyMergedCloudData(data.data);
+    state.sync.lastSynced = data.updated_at || new Date().toISOString();
+    await pushCloudData(true);
+    if (!silent) showToast('已与云端同步');
+  } else {
+    await pushCloudData(true);
+  }
+  setSyncStatus('已同步');
+  render();
+}
+async function pushCloudData(silent = false) {
+  if (!supabaseClient || !state.sync.user) return;
+  if (!silent) setSyncStatus('正在保存到云端...', true);
+  const now = new Date().toISOString();
+  const { error } = await supabaseClient
+    .from('eju_sync')
+    .upsert({ user_id: state.sync.user.id, data: cloudDataPayload(), updated_at: now },
+      { onConflict: 'user_id' });
+  if (error) return setSyncStatus(cloudErrorMessage(error));
+  state.sync.lastSynced = now;
+  setSyncStatus('已同步');
+  if (!silent) showToast('已保存到云端');
+}
+window.cloudSignUp = cloudSignUp;
+window.cloudSignIn = cloudSignIn;
+window.cloudSignOut = cloudSignOut;
+window.pullCloudData = pullCloudData;
+window.pushCloudData = pushCloudData;
+
+function renderSyncCard() {
+  if (!state.sync.available) {
+    return `<div class="card">
+      <div class="section-title" style="margin-top:0">云同步</div>
+      <div class="small danger-text">同步库未能加载（离线或 CDN 不可用）。本地功能不受影响。</div>
+    </div>`;
+  }
+  const last = state.sync.lastSynced ? displayDate(state.sync.lastSynced.slice(0, 10)) : '-';
+  if (state.sync.user) {
+    return `<div class="card">
+      <div class="section-title" style="margin-top:0">云同步</div>
+      <div class="small mb12">已登录: ${escapeHtml(state.sync.email)}<br>状态: ${escapeHtml(state.sync.status)} · 最近同步: ${last}</div>
+      <div class="row">
+        <button class="btn small" onclick="pushCloudData()" ${state.sync.busy ? 'disabled' : ''}>立即上传</button>
+        <button class="btn small secondary" onclick="pullCloudData()" ${state.sync.busy ? 'disabled' : ''}>从云端拉取</button>
+        <button class="btn small secondary" onclick="cloudSignOut()" ${state.sync.busy ? 'disabled' : ''}>退出登录</button>
+      </div>
+    </div>`;
+  }
+  return `<div class="card">
+    <div class="section-title" style="margin-top:0">云同步</div>
+    <div class="small mb12">用邮箱登录后可在手机和电脑间同步。状态: ${escapeHtml(state.sync.status)}</div>
+    <input type="email" class="form-input mb8" id="sync-email" placeholder="邮箱" autocomplete="email">
+    <input type="password" class="form-input mb8" id="sync-password" placeholder="密码" autocomplete="current-password">
+    <div class="row">
+      <button class="btn small" onclick="cloudSignIn()" ${state.sync.busy ? 'disabled' : ''}>登录</button>
+      <button class="btn small secondary" onclick="cloudSignUp()" ${state.sync.busy ? 'disabled' : ''}>注册</button>
+    </div>
+    <div class="tiny mt12">首次登录时会自动合并本机与云端数据（按题目 ID，保留较新一方）。</div>
+  </div>`;
+}
+
+// ---------- Toast ----------
+function showToast(msg, undoFn) {
+  if (toastTimer) clearTimeout(toastTimer);
+  const wrap = $('#toast-wrap');
+  wrap.innerHTML = `<div class="toast"><span>${escapeHtml(msg)}</span>${undoFn ? '<button class="undo" id="toast-undo">撤销</button>' : ''}</div>`;
+  if (undoFn) {
+    $('#toast-undo').addEventListener('click', () => {
+      undoFn();
+      wrap.innerHTML = '';
+      clearTimeout(toastTimer);
+      toastTimer = null;
+    });
+  }
+  toastTimer = setTimeout(() => { wrap.innerHTML = ''; toastTimer = null; }, undoFn ? 5000 : 2400);
+}
+
+// ---------- 初始化 ----------
+function init() {
+  state.items = loadAndMigrateItems();
+  suppressCloudSync = true;
+  saveItems(state.items); // 持久化迁移/补全结果
+  suppressCloudSync = false;
+  $$('.nav-btn').forEach(btn => btn.addEventListener('click', () => navigate(btn.dataset.view)));
+  $('#import-file').addEventListener('change', onImportFile);
+  $('#today-date').textContent = displayDate(todayStr());
+  // 跨日自动刷新（页面长开时）
+  let shownDay = todayStr();
+  setInterval(() => {
+    const t = todayStr();
+    if (t !== shownDay) {
+      shownDay = t;
+      $('#today-date').textContent = displayDate(t);
+      render();
+    }
+  }, 60 * 1000);
+  render();
+  initCloudSync();
+}
+if (typeof document !== 'undefined' && typeof window !== 'undefined' && !window.__EJU_TEST__) {
+  init();
+}
+</script>
+</body>
+</html>
