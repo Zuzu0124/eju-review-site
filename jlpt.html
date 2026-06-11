@@ -1,0 +1,871 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f1115">
+<title>N1 오답 수거함</title>
+<style>
+:root {
+  --bg: #0f1115;
+  --card: #1a1d24;
+  --card2: #222630;
+  --line: #2a2e38;
+  --text: #e8eaf0;
+  --muted: #8a90a0;
+  --accent: #5b8cff;
+  --accent-soft: #1c2a4d;
+  --good: #3ddc84;
+  --good-soft: #11301f;
+  --bad: #ff5f6b;
+  --bad-soft: #3a1418;
+  --warn: #ffb84d;
+  --warn-soft: #332512;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  font-size: 16px;
+  line-height: 1.55;
+  overflow-x: hidden;
+}
+.ja { font-family: -apple-system, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans JP", sans-serif; }
+.app {
+  max-width: 480px; margin: 0 auto; min-height: 100vh;
+  padding: 12px 16px calc(24px + env(safe-area-inset-bottom));
+  display: flex; flex-direction: column;
+}
+button { font-family: inherit; cursor: pointer; }
+
+.topbar { display: flex; justify-content: space-between; align-items: center; padding: 4px 0 12px; }
+.topbar .brand { font-size: 17px; font-weight: 800; letter-spacing: -0.3px; }
+.icon-btn {
+  appearance: none; border: 0; background: var(--card); color: var(--muted);
+  width: 40px; height: 40px; border-radius: 12px; font-size: 18px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.hero {
+  background: linear-gradient(160deg, var(--card) 0%, var(--card2) 100%);
+  border: 1px solid var(--line); border-radius: 20px;
+  padding: 20px 18px; margin-bottom: 14px; text-align: center;
+}
+.hero .dday { font-size: 15px; color: var(--muted); }
+.hero .dday b { color: var(--warn); font-size: 18px; }
+.hero .due-num { font-size: 56px; font-weight: 800; line-height: 1.1; margin: 6px 0 2px; }
+.hero .due-num.zero { color: var(--good); }
+.hero .due-label { font-size: 14px; color: var(--muted); }
+.hero .streak { margin-top: 12px; font-size: 13px; color: var(--muted); }
+
+.btn-xl {
+  appearance: none; border: 0; width: 100%; border-radius: 18px;
+  min-height: 64px; font-size: 18px; font-weight: 700; color: #fff;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  margin-bottom: 12px; transition: transform .08s;
+}
+.btn-xl:active { transform: scale(.97); }
+.btn-xl.primary { background: var(--accent); }
+.btn-xl.secondary { background: var(--card); border: 1px solid var(--line); color: var(--text); }
+.btn-xl.good { background: var(--good); color: #07210f; }
+.btn-xl:disabled { opacity: .45; }
+
+.btn-mid {
+  appearance: none; border: 0; border-radius: 14px; min-height: 52px;
+  font-size: 16px; font-weight: 700; padding: 0 16px;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  flex: 1; transition: transform .08s;
+}
+.btn-mid:active { transform: scale(.97); }
+.btn-mid.good { background: var(--good); color: #07210f; }
+.btn-mid.warn { background: var(--warn-soft); color: var(--warn); border: 1px solid #4d3a1c; }
+.btn-mid.neutral { background: var(--card2); color: var(--text); border: 1px solid var(--line); }
+
+.row { display: flex; gap: 10px; }
+.home-stats { text-align: center; font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+.sheet-title { font-size: 20px; font-weight: 800; margin: 4px 0 14px; }
+.back-btn {
+  appearance: none; border: 0; background: none; color: var(--muted);
+  font-size: 15px; padding: 8px 0; margin-bottom: 4px; display: inline-flex; align-items: center; gap: 4px;
+}
+textarea.paste-box {
+  width: 100%; min-height: 180px; resize: vertical;
+  background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+  color: var(--text); font-size: 16px; padding: 14px; outline: none;
+  font-family: inherit;
+}
+textarea.paste-box:focus { border-color: var(--accent); }
+.divider { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; margin: 16px 0; }
+.divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
+.thumbs { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.thumbs img { width: 64px; height: 64px; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); }
+.err-box {
+  background: var(--bad-soft); border: 1px solid #5a2228; color: var(--bad);
+  border-radius: 12px; padding: 12px 14px; font-size: 14px; margin: 12px 0;
+  word-break: break-all;
+}
+.spinner {
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 3px solid rgba(255,255,255,.25); border-top-color: #fff;
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.draft-card {
+  background: var(--card); border: 1px solid var(--line); border-radius: 16px;
+  padding: 14px; margin-bottom: 12px; position: relative;
+}
+.draft-card .del {
+  position: absolute; top: 8px; right: 8px;
+  appearance: none; border: 0; background: var(--card2); color: var(--muted);
+  width: 32px; height: 32px; border-radius: 10px; font-size: 15px;
+}
+.chip {
+  display: inline-block; font-size: 12px; font-weight: 700; border-radius: 8px;
+  padding: 2px 8px; background: var(--accent-soft); color: var(--accent); margin-right: 6px;
+}
+.chip.fire { background: var(--warn-soft); color: var(--warn); }
+.draft-q { font-size: 16px; margin: 8px 0 10px; white-space: pre-wrap; }
+.hint { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+
+.opt {
+  appearance: none; width: 100%; text-align: left; border-radius: 14px;
+  background: var(--card); border: 1.5px solid var(--line); color: var(--text);
+  font-size: 17px; padding: 14px 16px; margin-bottom: 10px;
+  display: flex; align-items: center; gap: 10px; transition: transform .08s, border-color .1s;
+  white-space: pre-wrap; word-break: break-word;
+}
+.opt:active { transform: scale(.98); }
+.opt.sm { font-size: 15px; padding: 10px 12px; margin-bottom: 8px; min-height: 0; }
+.opt.correct { border-color: var(--good); background: var(--good-soft); }
+.opt.wrong { border-color: var(--bad); background: var(--bad-soft); }
+.opt.dim { opacity: .55; }
+.opt .mark { margin-left: auto; font-weight: 800; flex-shrink: 0; }
+.opt .mark.g { color: var(--good); }
+.opt .mark.b { color: var(--bad); }
+
+.progress-bar { height: 5px; background: var(--card2); border-radius: 3px; overflow: hidden; margin: 6px 0 16px; }
+.progress-bar i { display: block; height: 100%; background: var(--accent); border-radius: 3px; transition: width .25s; }
+.q-card {
+  background: var(--card); border: 1px solid var(--line); border-radius: 18px;
+  padding: 18px 16px; margin-bottom: 16px;
+}
+.q-text { font-size: 19px; font-weight: 600; white-space: pre-wrap; word-break: break-word; }
+.q-meta { margin-top: 10px; font-size: 12px; color: var(--muted); }
+
+.verdict { text-align: center; font-size: 22px; font-weight: 800; margin: 6px 0 12px; animation: pop .3s ease; }
+.verdict.g { color: var(--good); }
+.verdict.b { color: var(--bad); }
+@keyframes pop { 0% { transform: scale(.6); opacity: 0; } 60% { transform: scale(1.15); } 100% { transform: scale(1); opacity: 1; } }
+
+.explain {
+  background: var(--card2); border: 1px solid var(--line); border-radius: 14px;
+  padding: 14px; font-size: 15px; margin-bottom: 12px; white-space: pre-wrap;
+}
+.explain .tags { margin-top: 8px; }
+.contrast {
+  background: var(--warn-soft); border: 1px solid #4d3a1c; border-radius: 14px;
+  padding: 14px; font-size: 15px; margin-bottom: 12px; white-space: pre-wrap;
+}
+.contrast b.title { display: block; color: var(--warn); margin-bottom: 6px; font-size: 14px; }
+
+.done-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; position: relative; overflow: hidden; }
+.done-check {
+  width: 96px; height: 96px; border-radius: 50%; background: var(--good-soft);
+  border: 3px solid var(--good); color: var(--good); font-size: 48px;
+  display: flex; align-items: center; justify-content: center;
+  animation: pop .45s ease; margin-bottom: 18px;
+}
+.done-title { font-size: 28px; font-weight: 800; margin-bottom: 8px; }
+.done-sub { color: var(--muted); font-size: 15px; margin-bottom: 28px; }
+.confetti { position: absolute; top: -12px; border-radius: 2px; animation: fall linear forwards; }
+@keyframes fall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(105vh) rotate(720deg); opacity: .6; }
+}
+
+.set-group { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 4px 14px; margin-bottom: 14px; }
+.set-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 13px 0; border-bottom: 1px solid var(--line); }
+.set-row:last-child { border-bottom: 0; }
+.set-row label { font-size: 15px; flex-shrink: 0; }
+.set-row input {
+  background: var(--card2); border: 1px solid var(--line); border-radius: 10px;
+  color: var(--text); font-size: 15px; padding: 9px 10px; outline: none;
+  width: 100%; max-width: 200px; font-family: inherit;
+}
+.set-row input:focus { border-color: var(--accent); }
+.set-row .val { color: var(--muted); font-size: 14px; }
+.set-actions { display: flex; gap: 10px; }
+.set-actions .btn-mid { font-size: 14px; min-height: 44px; }
+.foot-note { text-align: center; color: var(--muted); font-size: 12px; margin-top: 8px; }
+.toast {
+  position: fixed; bottom: calc(28px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%);
+  background: var(--card2); border: 1px solid var(--line); color: var(--text);
+  padding: 10px 18px; border-radius: 24px; font-size: 14px; z-index: 99;
+  animation: pop .25s ease; max-width: 90%;
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script crossorigin src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
+<script crossorigin src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@babel/standalone@7.26.4/babel.min.js"></script>
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useMemo, useRef, useCallback } = React;
+
+/* ---------- 저장소 (artifact window.storage / localStorage 겸용) ---------- */
+const KEYS = { cards: 'jlpt.cards.v1', settings: 'jlpt.settings.v1', stats: 'jlpt.stats.v1' };
+const store = {
+  async get(k) {
+    try {
+      if (window.storage && typeof window.storage.get === 'function') {
+        const v = await window.storage.get(k);
+        if (v == null) return null;
+        const raw = typeof v === 'string' ? v : (v.value != null ? v.value : JSON.stringify(v));
+        return JSON.parse(raw);
+      }
+    } catch (e) {}
+    try {
+      const v = localStorage.getItem(k);
+      return v == null ? null : JSON.parse(v);
+    } catch (e) { return null; }
+  },
+  async set(k, val) {
+    const s = JSON.stringify(val);
+    try {
+      if (window.storage && typeof window.storage.set === 'function') {
+        await window.storage.set(k, s);
+        return;
+      }
+    } catch (e) {}
+    try { localStorage.setItem(k, s); } catch (e) {}
+  },
+};
+
+/* ---------- 날짜 / SRS ---------- */
+const INTERVALS = [0, 1, 3, 7, 15]; // 당일 → 1일 → 3일 → 7일 → 15일
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+function addDays(dateStr, n) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, m - 1, d + n);
+  return dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2, '0') + '-' + String(dt.getDate()).padStart(2, '0');
+}
+function daysUntil(dateStr) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const target = new Date(y, m - 1, d);
+  const now = new Date(); now.setHours(0, 0, 0, 0);
+  return Math.round((target - now) / 86400000);
+}
+// correct=false 는 오답 또는 「찍어서 맞음」: 1일 단계로 강등 + 고질 오답 표시.
+// 시험일 이후로는 절대 예약하지 않음 (시험 임박 시 간격 자동 압축).
+function nextSrs(srs, correct, examDate) {
+  const stage = correct ? Math.min(srs.stage + 1, INTERVALS.length - 1) : 1;
+  const today = todayStr();
+  let due = addDays(today, INTERVALS[stage]);
+  if (examDate) {
+    if (today >= examDate) due = today;
+    else if (due > examDate) due = examDate;
+  }
+  return { stage, due, stubborn: srs.stubborn || !correct };
+}
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+
+/* ---------- 효과음 (WebAudio 합성, 음원 파일 없음) ---------- */
+let _actx = null;
+function playTone(correct) {
+  try {
+    _actx = _actx || new (window.AudioContext || window.webkitAudioContext)();
+    if (_actx.state === 'suspended') _actx.resume();
+    const now = _actx.currentTime;
+    const notes = correct ? [[660, 0], [880, 0.11]] : [[200, 0]];
+    notes.forEach(([f, t]) => {
+      const o = _actx.createOscillator(), g = _actx.createGain();
+      o.type = 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, now + t);
+      g.gain.exponentialRampToValueAtTime(correct ? 0.18 : 0.12, now + t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + t + 0.28);
+      o.connect(g); g.connect(_actx.destination);
+      o.start(now + t); o.stop(now + t + 0.3);
+    });
+  } catch (e) {}
+}
+
+/* ---------- Claude API ---------- */
+const MODEL = 'claude-sonnet-4-6';
+async function callClaude(apiKey, messages, system, maxTokens) {
+  const headers = {
+    'content-type': 'application/json',
+    'anthropic-version': '2023-06-01',
+    'anthropic-dangerous-direct-browser-access': 'true',
+  };
+  if (apiKey) headers['x-api-key'] = apiKey;
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST', headers,
+    body: JSON.stringify({ model: MODEL, max_tokens: maxTokens || 8192, system, messages }),
+  });
+  if (!res.ok) {
+    let detail = '';
+    try { detail = (await res.json()).error.message || ''; } catch (e) {}
+    if (res.status === 401 || res.status === 403) {
+      throw new Error('API 키 인증에 실패했어요. 설정(⚙)에서 Claude API 키를 확인해 주세요.');
+    }
+    throw new Error('API 오류 (' + res.status + ') ' + detail.slice(0, 200));
+  }
+  const data = await res.json();
+  return (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
+}
+function extractJsonArray(text) {
+  let t = text.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '');
+  try {
+    const v = JSON.parse(t);
+    return Array.isArray(v) ? v : [v];
+  } catch (e) {
+    const i = t.indexOf('['), j = t.lastIndexOf(']');
+    if (i >= 0 && j > i) {
+      const v = JSON.parse(t.slice(i, j + 1));
+      return Array.isArray(v) ? v : [v];
+    }
+    throw e;
+  }
+}
+
+const PARSE_SYSTEM = `당신은 JLPT N1 전문 출제자입니다. 사용자가 보낸 텍스트나 스크린샷(문제 앱의 오답, AI와의 Q&A 노트 등)을 복습 카드 JSON 배열로 변환합니다.
+
+규칙:
+1. 출력은 JSON 배열만. 마크다운 코드 펜스, 설명 등 다른 텍스트 일절 금지.
+2. 각 요소의 형식:
+{"type":"어휘읽기|어휘용법|문법|노트","question":"문제문(일본어 원문 그대로)","options":["선택지 4개(일본어)"],"answer":"options 중 정답과 완전히 동일한 문자열","explanation":"간결한 한국어 해설(1~3문장)","tags":["구체적인 단어나 문법 항목"],"source":"출처(알 수 없으면 빈 문자열)"}
+3. 입력이 객관식 문제면 그대로 구조화하세요. 정답 표시·해설이 있으면 활용하세요. 정답을 알 수 없으면 가장 타당한 답을 정답으로 하세요.
+4. 입력이 노트·AI Q&A 등 문제 형식이 아니면, 그 지식 포인트를 시험하는 독창적인 4지선다 문제를 새로 만드세요(빈칸 채우기 스타일 가능: 문장에 ___ 를 넣고 선택지 4개 제공). 절대 읽기 전용 텍스트로 저장하지 마세요. 이 경우 type은 "노트".
+5. 이미지 한 장에 여러 문제가 있으면 각각 별도의 배열 요소로 만드세요.
+6. options는 정확히 4개. answer는 options 중 하나와 글자 단위까지 완전히 일치해야 합니다.
+7. 오답 선택지는 N1 수준에서 실제로 헷갈리기 쉬운 것으로 구성하세요.`;
+
+async function parseToCards(apiKey, text, imagesB64) {
+  const content = [];
+  (imagesB64 || []).forEach(b64 => content.push({
+    type: 'image',
+    source: { type: 'base64', media_type: 'image/jpeg', data: b64 },
+  }));
+  content.push({ type: 'text', text: text && text.trim() ? text : '위 스크린샷의 문제/노트를 복습 카드로 변환해 주세요.' });
+  const raw = await callClaude(apiKey, [{ role: 'user', content }], PARSE_SYSTEM, 8192);
+  const arr = extractJsonArray(raw);
+  return arr
+    .filter(c => c && c.question && Array.isArray(c.options) && c.options.length >= 2 && c.answer)
+    .map(c => ({
+      id: uid(),
+      type: c.type || '노트',
+      question: String(c.question),
+      options: c.options.slice(0, 4).map(String),
+      answer: String(c.answer),
+      explanation: String(c.explanation || ''),
+      tags: Array.isArray(c.tags) ? c.tags.map(String) : [],
+      source: String(c.source || ''),
+      createdAt: todayStr(),
+      srs: { stage: 0, due: todayStr(), stubborn: false },
+      distractorMisses: {},
+      contrastNotes: {},
+    }))
+    .map(c => (c.options.includes(c.answer) ? c : { ...c, answer: c.options[0] }));
+}
+
+async function generateContrast(apiKey, card, distractor) {
+  const prompt = `JLPT N1 학습자가 아래 문제에서 「${distractor}」를 반복해서 잘못 선택했습니다. 정답은 「${card.answer}」입니다.
+
+문제: ${card.question}
+
+「${distractor}」와 「${card.answer}」의 의미·용법 차이를 한국어로 간결하게(2~4문장) 대비해서 설명해 주세요. 설명 텍스트만 출력하세요.`;
+  return (await callClaude(apiKey, [{ role: 'user', content: prompt }], undefined, 1024)).trim();
+}
+
+/* ---------- 이미지 압축 ---------- */
+function compressImage(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      try {
+        const max = 1568;
+        const scale = Math.min(1, max / Math.max(img.width, img.height));
+        const w = Math.max(1, Math.round(img.width * scale));
+        const h = Math.max(1, Math.round(img.height * scale));
+        const c = document.createElement('canvas');
+        c.width = w; c.height = h;
+        c.getContext('2d').drawImage(img, 0, 0, w, h);
+        URL.revokeObjectURL(url);
+        const dataUrl = c.toDataURL('image/jpeg', 0.85);
+        resolve({ b64: dataUrl.split(',')[1], preview: dataUrl });
+      } catch (e) { reject(e); }
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('이미지를 읽을 수 없어요')); };
+    img.src = url;
+  });
+}
+
+/* ---------- 공통 UI ---------- */
+function Toast({ msg }) { return msg ? <div className="toast">{msg}</div> : null; }
+function TypeChip({ type, stubborn }) {
+  return (
+    <span>
+      <span className="chip">{type}</span>
+      {stubborn && <span className="chip fire">🔥 고질 오답</span>}
+    </span>
+  );
+}
+
+/* ---------- 홈 ---------- */
+function Home({ cards, settings, stats, dueCards, go }) {
+  const dday = daysUntil(settings.examDate);
+  const stubbornCount = cards.filter(c => c.srs.stubborn).length;
+  return (
+    <div>
+      <div className="topbar">
+        <div className="brand">📦 N1 오답 수거함</div>
+        <button className="icon-btn" onClick={() => go('settings')} aria-label="설정">⚙</button>
+      </div>
+      <div className="hero">
+        <div className="dday">
+          {dday >= 0 ? <span>JLPT까지 <b>D-{dday}</b></span> : <span>시험일이 지났어요</span>}
+        </div>
+        <div className={'due-num' + (dueCards.length === 0 ? ' zero' : '')}>{dueCards.length}</div>
+        <div className="due-label">{dueCards.length === 0 ? '오늘 복습 끝! ✨' : '오늘 복습할 카드'}</div>
+        <div className="streak">📚 누적 학습 {stats.studyDays.length}일 · 카드 {cards.length}장{stubbornCount > 0 ? ` · 🔥 ${stubbornCount}` : ''}</div>
+      </div>
+      <button className="btn-xl primary" disabled={dueCards.length === 0} onClick={() => go('review')}>
+        ▶ 복습 시작 {dueCards.length > 0 ? `(${dueCards.length})` : ''}
+      </button>
+      <button className="btn-xl secondary" onClick={() => go('capture')}>➕ 던져 넣기</button>
+      {cards.length === 0 && (
+        <div className="home-stats">틀린 문제나 AI Q&A 노트를 붙여넣거나<br />스크린샷을 올리면 자동으로 카드가 돼요</div>
+      )}
+    </div>
+  );
+}
+
+/* ---------- 던져 넣기 (캡처) ---------- */
+function Capture({ settings, go, onParsed }) {
+  const [text, setText] = useState('');
+  const [images, setImages] = useState([]); // {b64, preview}
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const fileRef = useRef(null);
+
+  const pickFiles = async (e) => {
+    const files = Array.from(e.target.files || []);
+    e.target.value = '';
+    if (!files.length) return;
+    setError('');
+    try {
+      const out = [];
+      for (const f of files) out.push(await compressImage(f));
+      setImages(prev => [...prev, ...out]);
+    } catch (err) { setError(String(err.message || err)); }
+  };
+
+  const submit = async () => {
+    if (busy) return;
+    if (!text.trim() && images.length === 0) { setError('텍스트를 붙여넣거나 스크린샷을 올려 주세요'); return; }
+    setBusy(true); setError('');
+    try {
+      const drafts = await parseToCards(settings.apiKey, text, images.map(i => i.b64));
+      if (!drafts.length) throw new Error('카드를 만들지 못했어요. 내용을 확인하고 다시 시도해 주세요.');
+      onParsed(drafts);
+    } catch (err) {
+      setError(String(err.message || err));
+    } finally { setBusy(false); }
+  };
+
+  return (
+    <div>
+      <button className="back-btn" onClick={() => go('home')}>‹ 홈으로</button>
+      <div className="sheet-title">➕ 던져 넣기</div>
+      <textarea
+        className="paste-box ja"
+        placeholder="문제 원문이나 AI와의 Q&A 노트를 그대로 붙여넣으세요"
+        value={text}
+        onChange={e => setText(e.target.value)}
+      />
+      <div className="divider">또는</div>
+      <button className="btn-xl secondary" onClick={() => fileRef.current && fileRef.current.click()}>
+        🖼 스크린샷 업로드 {images.length > 0 ? `(${images.length}장)` : '(여러 장 가능)'}
+      </button>
+      <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={pickFiles} />
+      {images.length > 0 && (
+        <div className="thumbs">
+          {images.map((im, i) => (
+            <img key={i} src={im.preview} alt="" onClick={() => setImages(images.filter((_, j) => j !== i))} />
+          ))}
+        </div>
+      )}
+      {images.length > 0 && <div className="hint" style={{ marginTop: 6 }}>썸네일을 탭하면 제거돼요</div>}
+      {error && <div className="err-box">⚠ {error}</div>}
+      <div style={{ height: 12 }} />
+      <button className="btn-xl primary" onClick={submit} disabled={busy}>
+        {busy ? <span className="spinner" /> : '🤖 카드로 변환'}
+      </button>
+      {busy && <div className="foot-note">Claude가 분석 중… 잠시만요</div>}
+    </div>
+  );
+}
+
+/* ---------- 확인 (저장 전 검토) ---------- */
+function Confirm({ drafts, setDrafts, onSave, go }) {
+  const setAnswer = (cardId, opt) => {
+    setDrafts(ds => ds.map(d => d.id === cardId ? { ...d, answer: opt } : d));
+  };
+  const remove = (cardId) => setDrafts(ds => ds.filter(d => d.id !== cardId));
+  return (
+    <div>
+      <button className="back-btn" onClick={() => go('capture')}>‹ 다시 입력</button>
+      <div className="sheet-title">카드 {drafts.length}장 생성됨</div>
+      <div className="hint">정답이 틀렸으면 올바른 선택지를 탭해서 수정하세요</div>
+      {drafts.map(d => (
+        <div className="draft-card" key={d.id}>
+          <button className="del" onClick={() => remove(d.id)} aria-label="삭제">✕</button>
+          <TypeChip type={d.type} />
+          <div className="draft-q ja">{d.question}</div>
+          {d.options.map((opt, i) => (
+            <button
+              key={i}
+              className={'opt sm ja' + (opt === d.answer ? ' correct' : '')}
+              onClick={() => setAnswer(d.id, opt)}
+            >
+              {opt}
+              {opt === d.answer && <span className="mark g">✓ 정답</span>}
+            </button>
+          ))}
+          {d.explanation && <div className="hint" style={{ marginTop: 6 }}>{d.explanation}</div>}
+          {d.tags.length > 0 && <div>{d.tags.map((t, i) => <span className="chip" key={i}>{t}</span>)}</div>}
+        </div>
+      ))}
+      <button className="btn-xl good" disabled={drafts.length === 0} onClick={onSave}>
+        ✓ 모두 저장 ({drafts.length})
+      </button>
+    </div>
+  );
+}
+
+/* ---------- 복습 ---------- */
+function Review({ queue, cards, settings, updateCard, onAnswered, onFinish, go }) {
+  const [idx, setIdx] = useState(0);
+  const [phase, setPhase] = useState('question'); // question | feedback
+  const [chosen, setChosen] = useState(null);
+  const [contrast, setContrast] = useState(null); // null | 'loading' | string | 'fallback'
+
+  const card = useMemo(() => cards.find(c => c.id === queue[idx]), [cards, queue, idx]);
+  const shuffled = useMemo(() => card ? shuffle(card.options) : [], [queue[idx]]);
+
+  useEffect(() => {
+    if (!card && queue.length > 0) onFinish();
+  }, [card]);
+  if (!card) return null;
+
+  const isCorrect = chosen != null && chosen === card.answer;
+  const missCount = chosen != null ? (card.distractorMisses[chosen] || 0) : 0;
+
+  const choose = (opt) => {
+    if (phase !== 'question') return;
+    const correct = opt === card.answer;
+    playTone(correct);
+    setChosen(opt);
+    setPhase('feedback');
+    if (!correct) {
+      const misses = (card.distractorMisses[opt] || 0) + 1;
+      const updated = {
+        ...card,
+        distractorMisses: { ...card.distractorMisses, [opt]: misses },
+        srs: nextSrs(card.srs, false, settings.examDate),
+      };
+      updateCard(updated);
+      onAnswered();
+      if (misses >= 2) {
+        if (card.contrastNotes[opt]) {
+          setContrast(card.contrastNotes[opt]);
+        } else {
+          setContrast('loading');
+          generateContrast(settings.apiKey, card, opt)
+            .then(txt => {
+              updateCard({ ...updated, contrastNotes: { ...updated.contrastNotes, [opt]: txt } });
+              setContrast(txt);
+            })
+            .catch(() => setContrast('fallback'));
+        }
+      }
+    }
+  };
+
+  // 정답 후 자기평가: guessed=true 는 「찍어서 맞음」 → 오답 취급
+  const selfEval = (guessed) => {
+    updateCard({ ...card, srs: nextSrs(card.srs, !guessed, settings.examDate) });
+    onAnswered();
+    advance();
+  };
+  const advance = () => {
+    setChosen(null); setContrast(null); setPhase('question');
+    if (idx + 1 >= queue.length) onFinish();
+    else setIdx(idx + 1);
+  };
+
+  return (
+    <div>
+      <button className="back-btn" onClick={() => go('home')}>‹ 그만하기</button>
+      <div className="progress-bar"><i style={{ width: ((idx) / queue.length * 100) + '%' }} /></div>
+      <div className="q-card">
+        <TypeChip type={card.type} stubborn={card.srs.stubborn} />
+        <div className="q-text ja" style={{ marginTop: 8 }}>{card.question}</div>
+        {card.source && <div className="q-meta">출처: {card.source}</div>}
+      </div>
+
+      {shuffled.map((opt, i) => {
+        let cls = 'opt ja';
+        let mark = null;
+        if (phase === 'feedback') {
+          if (opt === card.answer) { cls += ' correct'; mark = <span className="mark g">✓</span>; }
+          else if (opt === chosen) { cls += ' wrong'; mark = <span className="mark b">✕</span>; }
+          else cls += ' dim';
+        }
+        return (
+          <button key={i} className={cls} onClick={() => choose(opt)}>
+            {opt}{mark}
+          </button>
+        );
+      })}
+
+      {phase === 'feedback' && (
+        <div>
+          <div className={'verdict ' + (isCorrect ? 'g' : 'b')}>
+            {isCorrect ? '⭕ 정답!' : '❌ 오답'}
+          </div>
+
+          {!isCorrect && missCount >= 2 && (
+            <div className="contrast">
+              <b className="title">🔥 헷갈리는 포인트 — {missCount}번째 같은 실수!</b>
+              {contrast === 'loading' && '비교 해설을 만드는 중…'}
+              {contrast === 'fallback' && (
+                <span>「<span className="ja">{chosen}</span>」를 {missCount}번 잘못 골랐어요. 정답 「<span className="ja">{card.answer}</span>」와의 차이에 특히 주의하세요!</span>
+              )}
+              {contrast && contrast !== 'loading' && contrast !== 'fallback' && contrast}
+            </div>
+          )}
+
+          <div className="explain">
+            {card.explanation || '해설이 없어요'}
+            {card.tags.length > 0 && (
+              <div className="tags">{card.tags.map((t, i) => <span className="chip" key={i}>{t}</span>)}</div>
+            )}
+          </div>
+
+          {isCorrect ? (
+            <div className="row">
+              <button className="btn-mid warn" onClick={() => selfEval(true)}>😅 찍어서 맞음</button>
+              <button className="btn-mid good" onClick={() => selfEval(false)}>✓ 기억해냈다</button>
+            </div>
+          ) : (
+            <button className="btn-xl primary" onClick={advance}>계속 →</button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------- 완료 ---------- */
+function Done({ stats, go }) {
+  const pieces = useMemo(() => Array.from({ length: 28 }, (_, i) => ({
+    left: Math.random() * 100,
+    delay: Math.random() * 0.9,
+    dur: 2 + Math.random() * 1.8,
+    size: 6 + Math.random() * 8,
+    color: ['#5b8cff', '#3ddc84', '#ffb84d', '#ff5f6b', '#c792ea'][i % 5],
+  })), []);
+  return (
+    <div className="done-wrap">
+      {pieces.map((p, i) => (
+        <span key={i} className="confetti" style={{
+          left: p.left + '%', width: p.size, height: p.size * 1.6,
+          background: p.color, animationDuration: p.dur + 's', animationDelay: p.delay + 's',
+        }} />
+      ))}
+      <div className="done-check">✓</div>
+      <div className="done-title">오늘 끝! 🎉</div>
+      <div className="done-sub">오늘 복습을 모두 마쳤어요<br />📚 누적 학습 {stats.studyDays.length}일째</div>
+      <button className="btn-xl secondary" style={{ maxWidth: 280 }} onClick={() => go('home')}>홈으로</button>
+    </div>
+  );
+}
+
+/* ---------- 설정 ---------- */
+function Settings({ settings, setSettings, cards, setCards, stats, go, toast }) {
+  const importRef = useRef(null);
+  const exportData = () => {
+    const data = JSON.stringify({ cards, stats, examDate: settings.examDate }, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'jlpt-cards-' + todayStr() + '.json';
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  };
+  const importData = (e) => {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        if (!Array.isArray(data.cards)) throw new Error();
+        setCards(data.cards);
+        toast('카드 ' + data.cards.length + '장을 가져왔어요');
+      } catch (err) { toast('가져오기 실패: 파일 형식이 올바르지 않아요'); }
+    };
+    reader.readAsText(f);
+  };
+  const stubbornCount = cards.filter(c => c.srs.stubborn).length;
+  return (
+    <div>
+      <button className="back-btn" onClick={() => go('home')}>‹ 홈으로</button>
+      <div className="sheet-title">⚙ 설정</div>
+      <div className="set-group">
+        <div className="set-row">
+          <label>시험 날짜</label>
+          <input type="date" value={settings.examDate}
+            onChange={e => setSettings({ ...settings, examDate: e.target.value || '2026-07-05' })} />
+        </div>
+        <div className="set-row">
+          <label>Claude API 키</label>
+          <input type="password" placeholder="sk-ant-…" value={settings.apiKey}
+            onChange={e => setSettings({ ...settings, apiKey: e.target.value.trim() })} />
+        </div>
+      </div>
+      <div className="set-group">
+        <div className="set-row"><label>전체 카드</label><span className="val">{cards.length}장</span></div>
+        <div className="set-row"><label>🔥 고질 오답</label><span className="val">{stubbornCount}장</span></div>
+        <div className="set-row"><label>누적 학습</label><span className="val">{stats.studyDays.length}일</span></div>
+      </div>
+      <div className="set-actions">
+        <button className="btn-mid neutral" onClick={exportData}>⬇ 내보내기</button>
+        <button className="btn-mid neutral" onClick={() => importRef.current && importRef.current.click()}>⬆ 가져오기</button>
+        <input ref={importRef} type="file" accept="application/json,.json" hidden onChange={importData} />
+      </div>
+      <div className="foot-note">API 키는 이 기기에만 저장돼요 · 내보내기에는 포함되지 않아요</div>
+    </div>
+  );
+}
+
+/* ---------- 앱 ---------- */
+function App() {
+  const [ready, setReady] = useState(false);
+  const [view, setView] = useState('home');
+  const [cards, setCardsState] = useState([]);
+  const [settings, setSettingsState] = useState({ examDate: '2026-07-05', apiKey: '' });
+  const [stats, setStatsState] = useState({ studyDays: [], answered: 0 });
+  const [drafts, setDrafts] = useState([]);
+  const [queue, setQueue] = useState([]);
+  const [toastMsg, setToastMsg] = useState('');
+  const toastTimer = useRef(null);
+
+  useEffect(() => {
+    (async () => {
+      const [c, s, st] = await Promise.all([store.get(KEYS.cards), store.get(KEYS.settings), store.get(KEYS.stats)]);
+      if (Array.isArray(c)) setCardsState(c);
+      if (s) setSettingsState(prev => ({ ...prev, ...s }));
+      if (st && Array.isArray(st.studyDays)) setStatsState(st);
+      setReady(true);
+    })();
+  }, []);
+
+  const setCards = useCallback((next) => {
+    setCardsState(prev => {
+      const v = typeof next === 'function' ? next(prev) : next;
+      store.set(KEYS.cards, v);
+      return v;
+    });
+  }, []);
+  const setSettings = useCallback((v) => { setSettingsState(v); store.set(KEYS.settings, v); }, []);
+  const setStats = useCallback((next) => {
+    setStatsState(prev => {
+      const v = typeof next === 'function' ? next(prev) : next;
+      store.set(KEYS.stats, v);
+      return v;
+    });
+  }, []);
+
+  const toast = (msg) => {
+    setToastMsg(msg);
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToastMsg(''), 2500);
+  };
+
+  const dueCards = useMemo(() => cards.filter(c => c.srs.due <= todayStr()), [cards]);
+
+  const go = (v) => {
+    if (v === 'review') {
+      const q = shuffle(dueCards.map(c => c.id));
+      if (!q.length) return;
+      setQueue(q);
+    }
+    setView(v);
+  };
+
+  const updateCard = useCallback((updated) => {
+    setCards(prev => prev.map(c => c.id === updated.id ? updated : c));
+  }, [setCards]);
+
+  const onAnswered = useCallback(() => {
+    setStats(prev => {
+      const today = todayStr();
+      const days = prev.studyDays.includes(today) ? prev.studyDays : [...prev.studyDays, today];
+      return { ...prev, studyDays: days, answered: (prev.answered || 0) + 1 };
+    });
+  }, [setStats]);
+
+  const onParsed = (ds) => { setDrafts(ds); setView('confirm'); };
+  const onSaveDrafts = () => {
+    setCards(prev => [...prev, ...drafts]);
+    toast('카드 ' + drafts.length + '장 저장 완료!');
+    setDrafts([]);
+    setView('home');
+  };
+
+  if (!ready) return <div className="app" style={{ justifyContent: 'center', alignItems: 'center' }}><span className="spinner" /></div>;
+
+  return (
+    <div className="app">
+      {view === 'home' && <Home cards={cards} settings={settings} stats={stats} dueCards={dueCards} go={go} />}
+      {view === 'capture' && <Capture settings={settings} go={go} onParsed={onParsed} />}
+      {view === 'confirm' && <Confirm drafts={drafts} setDrafts={setDrafts} onSave={onSaveDrafts} go={go} />}
+      {view === 'review' && (
+        <Review queue={queue} cards={cards} settings={settings}
+          updateCard={updateCard} onAnswered={onAnswered}
+          onFinish={() => setView('done')} go={go} />
+      )}
+      {view === 'done' && <Done stats={stats} go={go} />}
+      {view === 'settings' && (
+        <Settings settings={settings} setSettings={setSettings}
+          cards={cards} setCards={setCards} stats={stats} go={go} toast={toast} />
+      )}
+      <Toast msg={toastMsg} />
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
