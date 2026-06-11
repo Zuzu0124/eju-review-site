@@ -147,12 +147,33 @@ textarea.paste-box:focus { border-color: var(--accent); }
 .opt .mark.g { color: var(--good); }
 .opt .mark.b { color: var(--bad); }
 
-.progress-bar { height: 5px; background: var(--card2); border-radius: 3px; overflow: hidden; margin: 6px 0 16px; }
-.progress-bar i { display: block; height: 100%; background: var(--accent); border-radius: 3px; transition: width .25s; }
+.progress-head {
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+  color: var(--muted); font-size: 13px; margin: 2px 0 8px;
+}
+.progress-count { color: var(--text); font-weight: 800; }
+.progress-count b { color: var(--accent); font-size: 18px; }
+.progress-stage { white-space: nowrap; }
+.progress-bar {
+  height: 8px; background: var(--card2); border-radius: 999px; overflow: hidden;
+  margin: 0 0 16px; box-shadow: inset 0 0 0 1px rgba(255,255,255,.03);
+}
+.progress-bar i {
+  display: block; position: relative; height: 100%; background: linear-gradient(90deg, var(--accent), #7aa2ff);
+  border-radius: 999px; transition: width .35s cubic-bezier(.2,.9,.2,1);
+}
+.progress-bar i::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent);
+  transform: translateX(-100%); animation: progressShine 1.25s ease-out;
+}
+@keyframes progressShine { to { transform: translateX(100%); } }
 .q-card {
   background: var(--card); border: 1px solid var(--line); border-radius: 18px;
   padding: 18px 16px; margin-bottom: 16px;
+  animation: cardIn .22s ease;
 }
+@keyframes cardIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .q-text { font-size: 19px; font-weight: 600; white-space: pre-wrap; word-break: break-word; }
 .q-meta { margin-top: 10px; font-size: 12px; color: var(--muted); }
 
@@ -206,6 +227,15 @@ textarea.paste-box:focus { border-color: var(--accent); }
   background: var(--card2); border: 1px solid var(--line); color: var(--text);
   padding: 10px 18px; border-radius: 24px; font-size: 14px; z-index: 99;
   animation: pop .25s ease; max-width: 90%;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+  }
+  .confetti { display: none; }
 }
 </style>
 </head>
@@ -418,7 +448,9 @@ function compressImage(file) {
 }
 
 /* ---------- 공통 UI ---------- */
-function Toast({ msg }) { return msg ? <div className="toast">{msg}</div> : null; }
+function Toast({ msg }) {
+  return msg ? <div className="toast" role="status" aria-live="polite">{msg}</div> : null;
+}
 function TypeChip({ type, stubborn }) {
   return (
     <span>
@@ -513,12 +545,12 @@ function Capture({ settings, go, onParsed }) {
         </div>
       )}
       {images.length > 0 && <div className="hint" style={{ marginTop: 6 }}>썸네일을 탭하면 제거돼요</div>}
-      {error && <div className="err-box">⚠ {error}</div>}
+      {error && <div className="err-box" role="alert" aria-live="assertive">⚠ {error}</div>}
       <div style={{ height: 12 }} />
       <button className="btn-xl primary" onClick={submit} disabled={busy}>
         {busy ? <span className="spinner" /> : '🤖 카드로 변환'}
       </button>
-      {busy && <div className="foot-note">Claude가 분석 중… 잠시만요</div>}
+      {busy && <div className="foot-note" role="status" aria-live="polite">Claude가 분석 중… 잠시만요</div>}
     </div>
   );
 }
@@ -577,6 +609,8 @@ function Review({ queue, cards, settings, updateCard, onAnswered, onFinish, go }
 
   const isCorrect = chosen != null && chosen === card.answer;
   const missCount = chosen != null ? (card.distractorMisses[chosen] || 0) : 0;
+  const progressPct = Math.round(((idx + 1) / queue.length) * 100);
+  const progressStage = phase === 'question' ? '문제 풀이' : '해설 확인';
 
   const choose = (opt) => {
     if (phase !== 'question') return;
@@ -624,8 +658,21 @@ function Review({ queue, cards, settings, updateCard, onAnswered, onFinish, go }
   return (
     <div>
       <button className="back-btn" onClick={() => go('home')}>‹ 그만하기</button>
-      <div className="progress-bar"><i style={{ width: ((idx) / queue.length * 100) + '%' }} /></div>
-      <div className="q-card">
+      <div className="progress-head" aria-live="polite">
+        <span className="progress-count"><b>{idx + 1}</b> / {queue.length}</span>
+        <span className="progress-stage">{progressStage}</span>
+      </div>
+      <div
+        className="progress-bar"
+        role="progressbar"
+        aria-valuemin="1"
+        aria-valuemax={queue.length}
+        aria-valuenow={idx + 1}
+        aria-valuetext={`${idx + 1} / ${queue.length}`}
+      >
+        <i style={{ width: progressPct + '%' }} />
+      </div>
+      <div className="q-card" key={card.id}>
         <TypeChip type={card.type} stubborn={card.srs.stubborn} />
         <div className="q-text ja" style={{ marginTop: 8 }}>{card.question}</div>
         {card.source && <div className="q-meta">출처: {card.source}</div>}
