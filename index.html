@@ -425,6 +425,23 @@ function repairMigratedTiers(items) {
   return out;
 }
 
+// 出处修正：物理のエッセンス 緑 系列，在「緑」与紧跟的数字之间补「熱」→「緑 熱 12」。
+// 规则幂等（改完后不再匹配），且仅在确有改动时才更新 updatedAt，因此每次加载都可
+// 安全运行——即便同步中被旧副本短暂覆盖，下次加载也会自动再修复。
+function fixEssenceMidoriSource(items) {
+  for (const it of items) {
+    if (typeof it.source !== 'string') continue;
+    if (!it.source.includes('エッセンス')) continue;
+    if (!/緑\s*\d/.test(it.source)) continue;
+    const next = it.source.replace(/緑\s*(?=\d)/g, '緑 熱 ');
+    if (next !== it.source) {
+      it.source = next;
+      it.updatedAt = new Date().toISOString();
+    }
+  }
+  return items;
+}
+
 // ---------- 核心调度逻辑 ----------
 // ○: intervalIndex+1（最后一档→毕业）；△: 档位不变；×: 归零、明天再来
 // 毕业题: 每 30 天抽查；抽查 × → 降回 learning 的 7 天档
@@ -1081,7 +1098,7 @@ function applyMergedCloudData(remoteData) {
   remoteItems.forEach(r => byId.set(r.id, r));
   state.items.forEach(l => byId.set(l.id, mergeItems(l, byId.get(l.id))));
   // 远端独有的题目也按其复习记录重算，避免停留在迁移初值（档位1/明天）
-  state.items = [...byId.values()].map(recomputeItem);
+  state.items = fixEssenceMidoriSource([...byId.values()].map(recomputeItem));
   suppressCloudSync = true;
   saveItems(state.items);
   suppressCloudSync = false;
@@ -1244,7 +1261,7 @@ function showToast(msg, undoFn) {
 
 // ---------- 初始化 ----------
 function init() {
-  state.items = loadAndMigrateItems();
+  state.items = fixEssenceMidoriSource(loadAndMigrateItems());
   suppressCloudSync = true;
   saveItems(state.items); // 持久化迁移/补全结果
   suppressCloudSync = false;
