@@ -231,6 +231,7 @@ const KEYS = {
   LEGACY_LITE_ITEMS: 'eju.v2', // 更早期精简版的数据 key
   MIGRATED_FLAG: 'eju.migrated.v1to2',
   TIER_REPLAY_FLAG: 'eju.tierReplay.v1',
+  FIX_ESSENCE_FLAG: 'eju.fix.essenceMidori.v1',
 };
 const SUBJECTS = ['数学', '物理', '化学-理论', '化学-记忆'];
 const BOARDS = { mondai: '母题', kakomon: '过去问' };
@@ -425,9 +426,8 @@ function repairMigratedTiers(items) {
   return out;
 }
 
-// 出处修正：物理のエッセンス 緑 系列，在「緑」与紧跟的数字之间补「熱」→「緑 熱 12」。
-// 规则幂等（改完后不再匹配），且仅在确有改动时才更新 updatedAt，因此每次加载都可
-// 安全运行——即便同步中被旧副本短暂覆盖，下次加载也会自动再修复。
+// 出处一次性修正：物理のエッセンス 緑 系列，在「緑」与紧跟的数字之间补「熱」→「緑 熱 12」。
+// 仅作用于「緑」后直接跟数字的条目；已写明 電磁気 / 原子 等（緑后非数字）的不受影响。
 function fixEssenceMidoriSource(items) {
   for (const it of items) {
     if (typeof it.source !== 'string') continue;
@@ -439,6 +439,13 @@ function fixEssenceMidoriSource(items) {
       it.updatedAt = new Date().toISOString();
     }
   }
+  return items;
+}
+// 只跑一次（用标记记住），不在之后的加载/同步中再自动改动。
+function fixEssenceMidoriOnce(items) {
+  try { if (localStorage.getItem(KEYS.FIX_ESSENCE_FLAG)) return items; } catch (e) {}
+  fixEssenceMidoriSource(items);
+  try { localStorage.setItem(KEYS.FIX_ESSENCE_FLAG, new Date().toISOString()); } catch (e) {}
   return items;
 }
 
@@ -1043,6 +1050,7 @@ function clearAllData() {
   localStorage.removeItem(KEYS.LEGACY_LITE_ITEMS);
   localStorage.removeItem(KEYS.MIGRATED_FLAG);
   localStorage.removeItem(KEYS.TIER_REPLAY_FLAG);
+  localStorage.removeItem(KEYS.FIX_ESSENCE_FLAG);
   state.items = [];
   showToast('已删除全部数据');
   navigate('review');
@@ -1098,7 +1106,7 @@ function applyMergedCloudData(remoteData) {
   remoteItems.forEach(r => byId.set(r.id, r));
   state.items.forEach(l => byId.set(l.id, mergeItems(l, byId.get(l.id))));
   // 远端独有的题目也按其复习记录重算，避免停留在迁移初值（档位1/明天）
-  state.items = fixEssenceMidoriSource([...byId.values()].map(recomputeItem));
+  state.items = [...byId.values()].map(recomputeItem);
   suppressCloudSync = true;
   saveItems(state.items);
   suppressCloudSync = false;
@@ -1261,7 +1269,7 @@ function showToast(msg, undoFn) {
 
 // ---------- 初始化 ----------
 function init() {
-  state.items = fixEssenceMidoriSource(loadAndMigrateItems());
+  state.items = fixEssenceMidoriOnce(loadAndMigrateItems());
   suppressCloudSync = true;
   saveItems(state.items); // 持久化迁移/补全结果
   suppressCloudSync = false;
