@@ -392,11 +392,10 @@ function loadAndMigrateItems() {
   return [];
 }
 
-// 迁移题目的档位修正：不把旧题一律归到档位 1，而是把保留下来的复习记录
-// 按新规则逐次回放（○ 进档 / △ 原档 / × 归零 / 末档○毕业），推算出当前
-// 应处的档位和到期日，让旧数据自然接入新循环。结果只取决于 history，幂等。
-function replayHistoryTiers(item) {
-  if (!item.legacy || !item.history.length || item.status === 'graduated') return item;
+// 由复习记录推算档位/状态/到期日（history 非空时按时间顺序回放）。
+// 纯函数、幂等，不改 updatedAt——保证同步合并时不会因回放而虚增"新鲜度"。
+function recomputeItem(item) {
+  if (!item.history || !item.history.length) return item;
   const sorted = item.history.slice()
     .sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
   const sim = {
@@ -407,12 +406,17 @@ function replayHistoryTiers(item) {
     history: [],
   };
   for (const h of sorted) applyRating(sim, h.rating, h.date);
+  item.history = sorted;
   item.intervalIndex = sim.intervalIndex;
   item.status = sim.status;
   item.dueDate = sim.dueDate;
-  item.history = sorted;
-  item.updatedAt = new Date().toISOString();
   return item;
+}
+// 迁移题目的档位修正：不把旧题一律归到档位 1，而是把保留下来的复习记录
+// 按新规则逐次回放，推算出当前应处的档位和到期日，让旧数据自然接入新循环。
+function replayHistoryTiers(item) {
+  if (!item.legacy || !item.history.length || item.status === 'graduated') return item;
+  return recomputeItem(item);
 }
 function repairMigratedTiers(items) {
   try { if (localStorage.getItem(KEYS.TIER_REPLAY_FLAG)) return items; } catch (e) {}
@@ -1006,8 +1010,8 @@ function doImport(mode) {
     state.items = incoming;
   } else {
     const byId = new Map(state.items.map(i => [i.id, i]));
-    incoming.forEach(i => byId.set(i.id, pickNewer(byId.get(i.id), i)));
-    state.items = [...byId.values()];
+    incoming.forEach(i => byId.set(i.id, mergeItems(byId.get(i.id), i)));
+    state.items = [...byId.values()].map(recomputeItem);
   }
   saveItems(state.items);
   render();
@@ -1035,26 +1039,49 @@ const supabaseClient = (typeof window !== 'undefined' && window.supabase)
   ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
   : null;
 
-function itemTouchTime(i) {
-  return Math.max(0, Date.parse(i?.updatedAt || '') || 0,
-    ...(Array.isArray(i?.history) ? i.history.map(h => Date.parse(h.date) || 0) : [0]));
+// 合并两份复习记录：按 日期+评级 去重，再按时间排序。并集永不丢记录。
+function mergeHistories(a, b) {
+  const seen = new Set();
+  const out = [];
+  for (const h of [...(Array.isArray(a) ? a : []), ...(Array.isArray(b) ? b : [])]) {
+    if (!h || !h.date || !h.rating) continue;
+    const k = h.date + '|' + h.rating;
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push({ date: h.date, rating: h.rating });
+  }
+  out.sort((x, y) => x.date < y.date ? -1 : x.date > y.date ? 1 : 0);
+  return out;
 }
-function pickNewer(a, b) {
-  if (!a) return b;
-  if (!b) return a;
-  const ta = itemTouchTime(a), tb = itemTouchTime(b);
-  if (ta !== tb) return ta > tb ? a : b;
-  const ha = a.history?.length || 0, hb = b.history?.length || 0;
-  return hb > ha ? b : a;
+// 同一道题（同 id）跨设备合并：取复习记录并集后重算档位，让进度更靠前的一方胜出，
+// 不再用时间戳整条二选一（旧逻辑会让"晚加载但更旧"的设备覆盖已复习的设备）。
+function mergeItems(a, b) {
+  if (!a) return recomputeItem(b);
+  if (!b) return recomputeItem(a);
+  const ta = Date.parse(a.updatedAt || '') || 0;
+  const tb = Date.parse(b.updatedAt || '') || 0;
+  const base = tb > ta ? b : a; // 出处/备注等可编辑字段取较新一方
+  const merged = {
+    ...base,
+    addedDate: (a.addedDate && b.addedDate)
+      ? (a.addedDate < b.addedDate ? a.addedDate : b.addedDate)
+      : (a.addedDate || b.addedDate),
+    legacy: a.legacy || b.legacy,
+    history: mergeHistories(a.history, b.history),
+    updatedAt: (tb > ta ? b.updatedAt : a.updatedAt) || new Date().toISOString(),
+  };
+  return recomputeItem(merged);
 }
 function applyMergedCloudData(remoteData) {
   const today = todayStr();
   const remoteItems = Array.isArray(remoteData?.items)
     ? remoteData.items.map(it => migrateAnyItem(it, today)).filter(Boolean)
     : [];
-  const byId = new Map(remoteItems.map(i => [i.id, i]));
-  state.items.forEach(i => byId.set(i.id, pickNewer(i, byId.get(i.id))));
-  state.items = [...byId.values()];
+  const byId = new Map();
+  remoteItems.forEach(r => byId.set(r.id, r));
+  state.items.forEach(l => byId.set(l.id, mergeItems(l, byId.get(l.id))));
+  // 远端独有的题目也按其复习记录重算，避免停留在迁移初值（档位1/明天）
+  state.items = [...byId.values()].map(recomputeItem);
   suppressCloudSync = true;
   saveItems(state.items);
   suppressCloudSync = false;
