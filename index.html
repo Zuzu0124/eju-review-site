@@ -209,6 +209,21 @@ body::before {
 .danger-text { color: var(--bad); }
 .hidden { display: none; }
 button:focus-visible, .nav-btn:focus-visible, .subject-pick button:focus-visible, .rate-btn:focus-visible { outline: 2px solid var(--ring); outline-offset: 2px; }
+
+/* ---------- 微动效（克制、不花哨） ---------- */
+@keyframes viewEnter { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.view-enter > * { animation: viewEnter .42s cubic-bezier(.22, .61, .36, 1) both; }
+.view-enter > *:nth-child(2) { animation-delay: .04s; }
+.view-enter > *:nth-child(3) { animation-delay: .08s; }
+.view-enter > *:nth-child(4) { animation-delay: .12s; }
+.view-enter > *:nth-child(n+5) { animation-delay: .15s; }
+@keyframes navIndicator { from { transform: translateX(-50%) scaleX(0); } to { transform: translateX(-50%) scaleX(1); } }
+.nav-btn.active::before { animation: navIndicator .26s cubic-bezier(.22, .61, .36, 1); }
+@keyframes barGrow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+.bar { transform-origin: bottom; animation: barGrow .55s cubic-bezier(.22, .61, .36, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+}
 </style>
 </head>
 <body>
@@ -624,6 +639,38 @@ function render() {
 function navigate(view) {
   state.view = view;
   render();
+  afterViewRender();
+}
+// ---------- 视图切换动效（仅切换标签/首次加载时触发，评级等操作不重放） ----------
+function prefersReducedMotion() {
+  try { return window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) { return false; }
+}
+function animateMainEnter() {
+  const m = $('#main');
+  if (!m) return;
+  m.classList.add('view-enter');
+  clearTimeout(m._animTimer);
+  // 动画结束后移除标记，使评级等普通重渲染不再重放入场动画（避免列表闪烁）
+  m._animTimer = setTimeout(() => m.classList.remove('view-enter'), 750);
+}
+function animateCountUp() {
+  $$('.summary-nums .num').forEach(el => {
+    const target = parseInt(el.textContent, 10);
+    if (!Number.isFinite(target) || target <= 0) return;
+    const dur = 460, start = performance.now();
+    el.textContent = '0';
+    const tick = now => {
+      const p = Math.min(1, (now - start) / dur);
+      el.textContent = Math.round(target * (1 - Math.pow(1 - p, 3)));
+      if (p < 1) requestAnimationFrame(tick); else el.textContent = String(target);
+    };
+    requestAnimationFrame(tick);
+  });
+}
+function afterViewRender() {
+  if (prefersReducedMotion()) return;
+  animateMainEnter();
+  if (state.view === 'review') animateCountUp();
 }
 function updateBadge() {
   const today = todayStr();
@@ -1341,6 +1388,7 @@ function init() {
     }
   }, 60 * 1000);
   render();
+  afterViewRender();
   initCloudSync();
 }
 if (typeof document !== 'undefined' && typeof window !== 'undefined' && !window.__EJU_TEST__) {
