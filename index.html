@@ -852,6 +852,10 @@ let pendingImport = null;
 // ---------- 渲染 ----------
 function render() {
   updateBadge();
+  // 普通重渲染（评级、云同步回调等）不重放入场动画：先剥离动画类，
+  // 只有 navigate()/init() 会在 render 之后重新挂上
+  const m = $('#main');
+  if (m) m.classList.remove('view-enter', 'slide-l', 'slide-r');
   $$('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === state.view));
   switch (state.view) {
     case 'review': renderReview(); break;
@@ -877,11 +881,8 @@ function prefersReducedMotion() {
 function animateMainEnter(dir) {
   const m = $('#main');
   if (!m) return;
-  m.classList.remove('view-enter', 'slide-l', 'slide-r');
+  // render() 已剥离动画类；此处只负责挂上，下一次 render() 会再剥离
   m.classList.add(dir === 'l' ? 'slide-l' : dir === 'r' ? 'slide-r' : 'view-enter');
-  clearTimeout(m._animTimer);
-  // 动画结束后移除标记，使评级等普通重渲染不再重放入场动画（避免列表闪烁）
-  m._animTimer = setTimeout(() => m.classList.remove('view-enter', 'slide-l', 'slide-r'), 750);
 }
 function animateCountUp() {
   $$('.summary-nums .num').forEach(el => {
@@ -1697,8 +1698,14 @@ async function initCloudSync() {
       state.sync.user = session2?.user || null;
       state.sync.email = session2?.user?.email || '';
       state.sync.status = state.sync.user ? '已登录' : '未登录';
-      if (state.sync.user) await pullCloudData(true);
-      else if (state.view === 'data') renderData();
+      // Supabase 订阅后会立刻补发一次初始会话事件；同一用户不重复拉取，
+      // 避免首屏在短时间内被多次 render（入场动画反复重放的根源之一）
+      if (state.sync.user) {
+        if (state.sync.user.id !== lastPulledUserId) await pullCloudData(true);
+      } else {
+        lastPulledUserId = null;
+        if (state.view === 'data') renderData();
+      }
     });
   } catch (error) {
     state.sync.status = cloudErrorMessage(error);
@@ -1734,8 +1741,10 @@ async function cloudSignOut() {
   state.sync.email = '';
   setSyncStatus('已退出登录');
 }
+let lastPulledUserId = null;
 async function pullCloudData(silent = false) {
   if (!supabaseClient || !state.sync.user) return;
+  lastPulledUserId = state.sync.user.id;
   if (!silent) setSyncStatus('正在从云端同步...', true);
   const { data, error } = await supabaseClient
     .from('eju_sync')
