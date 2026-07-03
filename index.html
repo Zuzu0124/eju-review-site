@@ -850,12 +850,17 @@ let cloudPushTimer = null;
 let pendingImport = null;
 
 // ---------- 渲染 ----------
+// 所有对 #main 的重建都必须经过这里：先剥离入场动画类再写入内容。
+// 只有 navigate()/init() 会在渲染之后重新挂类，因此评级、筛选切换、
+// 展开题目、云同步回调等任何普通重渲染都不会重放入场动画。
+function setMain(html) {
+  const m = $('#main');
+  if (!m) return;
+  m.classList.remove('view-enter', 'slide-l', 'slide-r');
+  m.innerHTML = html;
+}
 function render() {
   updateBadge();
-  // 普通重渲染（评级、云同步回调等）不重放入场动画：先剥离动画类，
-  // 只有 navigate()/init() 会在 render 之后重新挂上
-  const m = $('#main');
-  if (m) m.classList.remove('view-enter', 'slide-l', 'slide-r');
   $$('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === state.view));
   switch (state.view) {
     case 'review': renderReview(); break;
@@ -868,11 +873,17 @@ function render() {
 const VIEW_ORDER = ['review', 'entry', 'library', 'stats', 'data'];
 function navigate(view) {
   const from = state.view;
+  // 点击当前已激活的标签：不重放入场动画，滚回顶部即可
+  if (view === from) {
+    render();
+    try { window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? 'auto' : 'smooth' }); } catch (e) {}
+    return;
+  }
   state.view = view;
   render();
   // 方向感知：按标签顺序决定滑入方向
   const a = VIEW_ORDER.indexOf(from), b = VIEW_ORDER.indexOf(view);
-  afterViewRender(a >= 0 && b >= 0 && a !== b ? (b > a ? 'l' : 'r') : null);
+  afterViewRender(a >= 0 && b >= 0 ? (b > a ? 'l' : 'r') : null);
 }
 // ---------- 视图切换动效（仅切换标签/首次加载时触发，评级等操作不重放） ----------
 function prefersReducedMotion() {
@@ -984,7 +995,7 @@ function renderReview() {
         去「录入」添加今天学的母题吧
       </div>`;
     }
-    $('#main').innerHTML = html;
+    setMain(html);
     return;
   }
 
@@ -1009,7 +1020,7 @@ function renderReview() {
     html += `<div class="group-title grad">${ICON_CAP}月度抽查<span class="count-pill">${gradOrdered.length}</span></div>`;
     html += gradOrdered.map(i => taskCard(i, today)).join('');
   }
-  $('#main').innerHTML = html;
+  setMain(html);
 }
 
 function taskCard(item, today) {
@@ -1259,7 +1270,7 @@ function renderEntry() {
       </div>
     </div>`).join('') + `</div>`;
   }
-  $('#main').innerHTML = html;
+  setMain(html);
   const input = $('#entry-source');
   input.addEventListener('keydown', e => { if (e.key === 'Enter') addItem(); });
 }
@@ -1340,7 +1351,7 @@ function renderLibrary() {
   </div>
   <div class="section-title">共 ${list.length} 题</div>
   <div class="card" id="lib-list">${renderLibraryList(list, today)}</div>`;
-  $('#main').innerHTML = html;
+  setMain(html);
 }
 function renderLibraryListOnly() {
   const el = $('#lib-list');
@@ -1506,7 +1517,7 @@ function renderStats() {
       ${rateRows}
     </table>
   </div>`;
-  $('#main').innerHTML = html;
+  setMain(html);
 }
 
 // --- 数据页 ---
@@ -1531,7 +1542,7 @@ function renderData() {
     <button class="btn block danger" onclick="clearAllData()">删除全部数据</button>
   </div>
   <div class="tiny center mt12">所有数据保存在本浏览器的 localStorage 中</div>`;
-  $('#main').innerHTML = html;
+  setMain(html);
 }
 
 function exportData() {
