@@ -14,9 +14,9 @@
 <meta name="format-detection" content="telephone=no">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!-- 字体非阻塞加载：先用系统字体渲染首帧，字体到达后再换（display=swap），避免首屏被外链 CSS 卡住闪底色 -->
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"></noscript>
+<!-- 字体非阻塞加载 + display=optional：首访直接用系统字体（不中途跳变闪动），字体入缓存后下次访问生效 -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&family=Space+Grotesk:wght@500;600;700&display=optional" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&family=Space+Grotesk:wght@500;600;700&display=optional"></noscript>
 <style>
 /* ============ 设计令牌：暖石墨工作台 ============ */
 :root {
@@ -474,7 +474,7 @@ button:focus-visible, .nav-btn:focus-visible, .subject-pick button:focus-visible
 <div class="toast-wrap" id="toast-wrap"></div>
 <input type="file" id="import-file" accept="application/json,.json" class="hidden">
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <script>
 'use strict';
 /* ============================================================
@@ -1630,9 +1630,14 @@ window.clearAllData = clearAllData;
 // ---------- 云同步（Supabase，延续旧版账号体系） ----------
 const SUPABASE_URL = 'https://uqfzxrwlakmyipgxckyr.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_iLdWO1juWmX4zvIYB3svXA_TSe2QCzd';
-const supabaseClient = (typeof window !== 'undefined' && window.supabase)
-  ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)
-  : null;
+// supabase-js 以 defer 方式加载（不阻塞首屏渲染），首次使用时才创建客户端
+let supabaseClient = null;
+function getSupabase() {
+  if (!supabaseClient && typeof window !== 'undefined' && window.supabase) {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  }
+  return supabaseClient;
+}
 
 // 合并两份复习记录：按 日期+评级 去重，再按时间排序。并集永不丢记录。
 function mergeHistories(a, b) {
@@ -1690,7 +1695,7 @@ function setSyncStatus(msg, busy = false) {
   if (state.view === 'data') renderData();
 }
 function scheduleCloudPush() {
-  if (!supabaseClient || !state.sync.user) return;
+  if (!getSupabase() || !state.sync.user) return;
   clearTimeout(cloudPushTimer);
   cloudPushTimer = setTimeout(() => pushCloudData(true), 1200);
 }
@@ -1699,17 +1704,18 @@ function cloudErrorMessage(error) {
   return error.message || String(error);
 }
 async function initCloudSync() {
-  if (!supabaseClient) return;
+  const sb = getSupabase();
+  if (!sb) return;
   state.sync.available = true;
   try {
-    const { data, error } = await supabaseClient.auth.getSession();
+    const { data, error } = await sb.auth.getSession();
     if (error) throw error;
     const session = data?.session;
     state.sync.user = session?.user || null;
     state.sync.email = session?.user?.email || '';
     state.sync.status = state.sync.user ? '已登录' : '未登录';
     if (state.sync.user) await pullCloudData(true);
-    supabaseClient.auth.onAuthStateChange(async (_event, session2) => {
+    sb.auth.onAuthStateChange(async (_event, session2) => {
       state.sync.user = session2?.user || null;
       state.sync.email = session2?.user?.email || '';
       state.sync.status = state.sync.user ? '已登录' : '未登录';
@@ -1728,40 +1734,44 @@ async function initCloudSync() {
   }
 }
 async function cloudSignUp() {
-  if (!supabaseClient) return alert('同步库未能加载');
+  const sb = getSupabase();
+  if (!sb) return alert('同步库未能加载');
   const email = $('#sync-email')?.value.trim();
   const password = $('#sync-password')?.value;
   if (!email || !password) return alert('请输入邮箱和密码');
   setSyncStatus('注册中...', true);
-  const { error } = await supabaseClient.auth.signUp({ email, password });
+  const { error } = await sb.auth.signUp({ email, password });
   if (error) return setSyncStatus(cloudErrorMessage(error));
   setSyncStatus('已注册。若收到确认邮件请先确认再登录');
 }
 async function cloudSignIn() {
-  if (!supabaseClient) return alert('同步库未能加载');
+  const sb = getSupabase();
+  if (!sb) return alert('同步库未能加载');
   const email = $('#sync-email')?.value.trim();
   const password = $('#sync-password')?.value;
   if (!email || !password) return alert('请输入邮箱和密码');
   setSyncStatus('登录中...', true);
-  const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+  const { data, error } = await sb.auth.signInWithPassword({ email, password });
   if (error) return setSyncStatus(cloudErrorMessage(error));
   state.sync.user = data.user;
   state.sync.email = data.user?.email || email;
   await pullCloudData(true);
 }
 async function cloudSignOut() {
-  if (!supabaseClient) return;
-  await supabaseClient.auth.signOut();
+  const sb = getSupabase();
+  if (!sb) return;
+  await sb.auth.signOut();
   state.sync.user = null;
   state.sync.email = '';
   setSyncStatus('已退出登录');
 }
 let lastPulledUserId = null;
 async function pullCloudData(silent = false) {
-  if (!supabaseClient || !state.sync.user) return;
+  const sb = getSupabase();
+  if (!sb || !state.sync.user) return;
   lastPulledUserId = state.sync.user.id;
   if (!silent) setSyncStatus('正在从云端同步...', true);
-  const { data, error } = await supabaseClient
+  const { data, error } = await sb
     .from('eju_sync')
     .select('data,updated_at')
     .eq('user_id', state.sync.user.id)
@@ -1779,10 +1789,11 @@ async function pullCloudData(silent = false) {
   render();
 }
 async function pushCloudData(silent = false) {
-  if (!supabaseClient || !state.sync.user) return;
+  const sb = getSupabase();
+  if (!sb || !state.sync.user) return;
   if (!silent) setSyncStatus('正在保存到云端...', true);
   const now = new Date().toISOString();
-  const { error } = await supabaseClient
+  const { error } = await sb
     .from('eju_sync')
     .upsert({ user_id: state.sync.user.id, data: cloudDataPayload(), updated_at: now },
       { onConflict: 'user_id' });
@@ -1875,7 +1886,9 @@ function init() {
   }, 60 * 1000);
   render();
   afterViewRender();
-  initCloudSync();
+  // supabase-js 是 defer 加载的：就绪则立即启动同步，否则等页面 load 后再启动
+  if (window.supabase) initCloudSync();
+  else window.addEventListener('load', initCloudSync, { once: true });
 }
 if (typeof document !== 'undefined' && typeof window !== 'undefined' && !window.__EJU_TEST__) {
   init();
