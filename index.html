@@ -795,7 +795,10 @@ function mergeBooks(a, b) {
 // 预置书目（用户提供的书单，按 类型|科目 分组）。
 // 修改书单后把 BOOKS_SEED_FLAG 的版本号 +1，即可在所有设备上重新并入（不会覆盖用户手动添加/删除后的其他书）。
 const PRESET_BOOKS = {
-  // '.mondai|数学': ['书名1', '书名2'],
+  'mondai|数学': ['元気が出る数学'],
+  'mondai|物理': ['物理のエッセンス 赤', '物理のエッセンス 緑'],
+  'mondai|化学-理论': ['基礎問題精講', '入門問題基礎', '福間の無機化学'],
+  'mondai|化学-记忆': ['福間の無機化学', '基礎問題精講', '入門問題基礎'],
 };
 const BOOKS_SEED_FLAG = 'eju.booksSeeded.v1';
 function seedPresetBooks() {
