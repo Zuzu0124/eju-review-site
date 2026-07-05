@@ -228,6 +228,19 @@ body::before {
 .subject-pick.seg button:hover { color: var(--text); }
 .subject-pick.seg button.on { background: var(--card); color: var(--text); font-weight: 600; box-shadow: var(--shadow-sm), inset 0 0 0 1px var(--line); }
 
+/* 常用书目胶囊 */
+.book-chips { display: flex; flex-wrap: wrap; gap: 7px; }
+.book-chip {
+  appearance: none; cursor: pointer; font-family: inherit;
+  border: 1px solid var(--line); background: var(--card); color: var(--text);
+  border-radius: 999px; padding: 8px 14px; font-size: 13.5px; font-weight: 500; min-height: 38px;
+  transition: all .15s ease; overflow-wrap: anywhere;
+}
+.book-chip:hover { border-color: var(--hover-border); }
+.book-chip.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; box-shadow: inset 0 0 0 1px var(--accent); }
+.book-chip.ghost { border-style: dashed; color: var(--muted); background: transparent; }
+.book-chip .bx { margin-left: 6px; font-weight: 700; color: var(--bad); }
+
 /* ---------- 复习页仪表盘 ---------- */
 .sticky-summary {
   position: sticky; top: 10px; z-index: 40;
@@ -491,6 +504,10 @@ function escapeHtml(s) {
   if (s == null) return '';
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+// 把任意字符串安全地嵌入内联 onclick 的 JS 实参位置
+function jsStr(s) {
+  return JSON.stringify(String(s)).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+}
 
 // 日期一律使用本地时区的 YYYY-MM-DD 字符串，避免 UTC 跨日 bug
 function formatDate(d) {
@@ -528,6 +545,7 @@ const KEYS = {
   LEGACY_ITEMS: 'eju.items.v1',
   LEGACY_LITE_ITEMS: 'eju.v2', // 更早期精简版的数据 key
   MIGRATED_FLAG: 'eju.migrated.v1to2',
+  BOOKS: 'eju.books.v1',
   TIER_REPLAY_FLAG: 'eju.tierReplay.v1',
   FIX_ESSENCE_FLAG: 'eju.fix.essenceMidori.v1',
 };
@@ -747,6 +765,51 @@ function fixEssenceMidoriOnce(items) {
   return items;
 }
 
+// ---------- 常用书目（按 类型|科目 分组，录入时点选书名 + 手输题号） ----------
+function bookKey(board, subject) { return `${board}|${subject}`; }
+function normalizeBooks(b) {
+  const out = {};
+  if (b && typeof b === 'object') {
+    for (const [k, list] of Object.entries(b)) {
+      if (!Array.isArray(list)) continue;
+      const clean = [...new Set(list.filter(x => typeof x === 'string' && x.trim()).map(x => x.trim()))].slice(0, 20);
+      if (clean.length) out[k] = clean;
+    }
+  }
+  return out;
+}
+function loadBooks() { return normalizeBooks(loadJSON(KEYS.BOOKS, {})); }
+function saveBooks(books) {
+  try {
+    localStorage.setItem(KEYS.BOOKS, JSON.stringify(books));
+    if (!suppressCloudSync) scheduleCloudPush();
+  } catch (e) { console.error('Save books error:', e); }
+}
+function mergeBooks(a, b) {
+  const out = normalizeBooks(a);
+  for (const [k, list] of Object.entries(normalizeBooks(b))) {
+    out[k] = [...new Set([...(out[k] || []), ...list])].slice(0, 20);
+  }
+  return out;
+}
+// 预置书目（用户提供的书单，按 类型|科目 分组）。
+// 修改书单后把 BOOKS_SEED_FLAG 的版本号 +1，即可在所有设备上重新并入（不会覆盖用户手动添加/删除后的其他书）。
+const PRESET_BOOKS = {
+  'mondai|数学': ['元気が出る数学'],
+  'mondai|物理': ['物理のエッセンス 赤', '物理のエッセンス 緑'],
+  'mondai|化学-理论': ['基礎問題精講', '入門問題基礎', '福間の無機化学'],
+  'mondai|化学-记忆': ['福間の無機化学', '基礎問題精講', '入門問題基礎'],
+};
+const BOOKS_SEED_FLAG = 'eju.booksSeeded.v1';
+function seedPresetBooks() {
+  try {
+    if (localStorage.getItem(BOOKS_SEED_FLAG)) return;
+    state.books = mergeBooks(PRESET_BOOKS, state.books);
+    saveBooks(state.books);
+    localStorage.setItem(BOOKS_SEED_FLAG, new Date().toISOString());
+  } catch (e) {}
+}
+
 // ---------- 核心调度逻辑 ----------
 // ○: intervalIndex+1（最后一档→毕业）；△: 档位不变；×: 归零、明天再来
 // 毕业题: 每 30 天抽查；抽查 × → 降回 learning 的 7 天档
@@ -832,6 +895,9 @@ const state = {
   items: [],
   entryBoard: 'mondai',
   entrySubject: SUBJECTS[0],
+  entryBook: null,      // 当前选中的书目；null = 手动输入完整出处
+  bookEditMode: false,  // 书目胶囊的删除模式
+  books: {},            // { "类型|科目": [书名…] }
   libBoard: 'all',
   libSubject: 'all',
   libStatus: 'all',
@@ -1240,6 +1306,9 @@ function renderEntry() {
   const placeholder = state.entryBoard === 'kakomon'
     ? '例: 2023年6月 数学 Q12'
     : '例: 青チャートIIB p.123 例题5';
+  const books = state.books[bookKey(state.entryBoard, state.entrySubject)] || [];
+  // 当前选中的书必须在当前 类型|科目 的列表里，否则退回手动输入
+  const book = books.includes(state.entryBook) ? state.entryBook : null;
   let html = `<div class="screen-head">
     <div class="screen-title">录入新题</div>
     <div class="screen-sub">记录今天学的题，明天开始进入复习循环</div>
@@ -1254,9 +1323,21 @@ function renderEntry() {
       `<button class="${s === state.entrySubject ? 'on' : ''}" onclick="setEntrySubject('${s}')">${s}</button>`).join('')}
     </div>
     <div class="tiny mt12">间隔序列: ${seqFor(state.entrySubject).join(' → ')} 天</div>
+    <label class="form-label">书目（点选后只需输入题号）</label>
+    <div class="book-chips">
+      ${books.map(b => `<button class="book-chip ${b === book && !state.bookEditMode ? 'on' : ''}" onclick="${state.bookEditMode ? `removeBook(${jsStr(b)})` : `selectBook(${jsStr(b)})`}">${escapeHtml(b)}${state.bookEditMode ? '<span class="bx">×</span>' : ''}</button>`).join('')}
+      <button class="book-chip ${!book && !state.bookEditMode ? 'on' : ''}" onclick="selectBook(null)">手动输入</button>
+      <button class="book-chip ghost" onclick="addBook()">＋ 添加书</button>
+      ${books.length ? `<button class="book-chip ghost" onclick="toggleBookEdit()">${state.bookEditMode ? '完成' : '编辑'}</button>` : ''}
+    </div>
+    ${book ? `
+    <label class="form-label">题号 / 页码（书：${escapeHtml(book)}）</label>
+    <input type="text" class="form-input" id="entry-num" placeholder="例: p.123 例3 / 12" enterkeyhint="done">
+    ` : `
     <label class="form-label">${state.entryBoard === 'kakomon' ? '出处（年度/回次 + 题号）' : '出处（教材名 + 页码/题号）'}</label>
     <input type="text" class="form-input" id="entry-source" list="source-suggest" placeholder="${placeholder}" enterkeyhint="done">
     <datalist id="source-suggest">${sources.map(s => `<option value="${escapeHtml(s)}">`).join('')}</datalist>
+    `}
     <label class="form-label">备注（可选）</label>
     <input type="text" class="form-input" id="entry-note" placeholder="易错点、思路提示等">
     <button class="btn block mt12" onclick="addItem()">添加${BOARDS[state.entryBoard]}（明天开始复习）</button>
@@ -1275,24 +1356,74 @@ function renderEntry() {
     </div>`).join('') + `</div>`;
   }
   setMain(html);
-  const input = $('#entry-source');
-  input.addEventListener('keydown', e => { if (e.key === 'Enter') addItem(); });
+  const input = $('#entry-num') || $('#entry-source');
+  if (input) input.addEventListener('keydown', e => { if (e.key === 'Enter') addItem(); });
 }
 function setEntrySubject(s) { state.entrySubject = s; renderEntry(); }
 window.setEntrySubject = setEntrySubject;
 function setEntryBoard(b) { state.entryBoard = b; renderEntry(); }
 window.setEntryBoard = setEntryBoard;
 
+// --- 书目胶囊交互 ---
+function selectBook(name) {
+  state.entryBook = name;
+  state.bookEditMode = false;
+  renderEntry();
+  (name ? $('#entry-num') : $('#entry-source'))?.focus();
+}
+window.selectBook = selectBook;
+function addBook() {
+  const name = (prompt('输入书名（例: 物理のエッセンス 緑）') || '').trim();
+  if (!name) return;
+  const key = bookKey(state.entryBoard, state.entrySubject);
+  const list = state.books[key] || (state.books[key] = []);
+  if (!list.includes(name)) {
+    if (list.length >= 20) { alert('每组最多 20 本书'); return; }
+    list.push(name);
+    saveBooks(state.books);
+  }
+  selectBook(name);
+}
+window.addBook = addBook;
+function removeBook(name) {
+  const key = bookKey(state.entryBoard, state.entrySubject);
+  const list = state.books[key] || [];
+  const idx = list.indexOf(name);
+  if (idx < 0) return;
+  if (!confirm(`从常用书目移除「${name}」？（不影响已录入的题目）`)) return;
+  list.splice(idx, 1);
+  if (!list.length) delete state.books[key];
+  if (state.entryBook === name) state.entryBook = null;
+  saveBooks(state.books);
+  renderEntry();
+}
+window.removeBook = removeBook;
+function toggleBookEdit() {
+  state.bookEditMode = !state.bookEditMode;
+  renderEntry();
+}
+window.toggleBookEdit = toggleBookEdit;
+
 function addItem() {
-  const source = $('#entry-source').value.trim();
   const note = $('#entry-note').value.trim();
-  if (!source) { $('#entry-source').focus(); return; }
+  const books = state.books[bookKey(state.entryBoard, state.entrySubject)] || [];
+  const book = books.includes(state.entryBook) ? state.entryBook : null;
+  let source;
+  if (book) {
+    const num = $('#entry-num')?.value.trim();
+    if (!num) { $('#entry-num')?.focus(); return; }
+    source = `${book} ${num}`;
+  } else {
+    source = $('#entry-source')?.value.trim();
+    if (!source) { $('#entry-source')?.focus(); return; }
+  }
   const item = createItem(state.entrySubject, source, note, todayStr(), state.entryBoard);
   state.items.push(item);
   saveItems(state.items);
   render();
   showToast(`已添加，${displayDate(item.dueDate)} 首次复习`);
-  $('#entry-source')?.focus();
+  // 连续录入同一本书：保持书目选中，只清空并聚焦题号
+  ($('#entry-num') || $('#entry-source'))?.focus();
 }
 window.addItem = addItem;
 
@@ -1555,6 +1686,7 @@ function exportData() {
     version: 3,
     exportedAt: new Date().toISOString(),
     items: state.items,
+    books: state.books,
   };
   downloadText(`eju-review-backup-${todayStr().replace(/-/g, '')}.json`,
     JSON.stringify(data, null, 2), 'application/json');
@@ -1584,7 +1716,7 @@ function onImportFile(event) {
       if (!data || !Array.isArray(data.items)) { alert('无效的备份文件'); return; }
       const today = todayStr();
       const incoming = data.items.map(it => migrateAnyItem(it, today)).filter(Boolean);
-      pendingImport = incoming;
+      pendingImport = { items: incoming, books: normalizeBooks(data.books) };
       const mode = confirm(`读取到 ${incoming.length} 题。\n\n「确定」= 合并（按 ID 去重，保留较新一方）\n「取消」= 完全覆盖现有数据`);
       doImport(mode ? 'merge' : 'overwrite');
     } catch (err) {
@@ -1601,13 +1733,16 @@ function doImport(mode) {
   pendingImport = null;
   if (mode === 'overwrite') {
     if (!confirm('将覆盖现有全部数据，无法撤销。确定吗？')) return;
-    state.items = incoming;
+    state.items = incoming.items;
+    if (Object.keys(incoming.books).length) state.books = incoming.books;
   } else {
     const byId = new Map(state.items.map(i => [i.id, i]));
-    incoming.forEach(i => byId.set(i.id, mergeItems(byId.get(i.id), i)));
+    incoming.items.forEach(i => byId.set(i.id, mergeItems(byId.get(i.id), i)));
     state.items = [...byId.values()].map(recomputeItem);
+    state.books = mergeBooks(state.books, incoming.books);
   }
   saveItems(state.items);
+  saveBooks(state.books);
   render();
   showToast(`导入完成，共 ${state.items.length} 题`);
 }
@@ -1621,7 +1756,11 @@ function clearAllData() {
   localStorage.removeItem(KEYS.MIGRATED_FLAG);
   localStorage.removeItem(KEYS.TIER_REPLAY_FLAG);
   localStorage.removeItem(KEYS.FIX_ESSENCE_FLAG);
+  localStorage.removeItem(KEYS.BOOKS);
+  localStorage.removeItem(BOOKS_SEED_FLAG);
   state.items = [];
+  state.books = {};
+  state.entryBook = null;
   showToast('已删除全部数据');
   navigate('review');
 }
@@ -1682,12 +1821,14 @@ function applyMergedCloudData(remoteData) {
   state.items.forEach(l => byId.set(l.id, mergeItems(l, byId.get(l.id))));
   // 远端独有的题目也按其复习记录重算，避免停留在迁移初值（档位1/明天）
   state.items = [...byId.values()].map(recomputeItem);
+  state.books = mergeBooks(state.books, remoteData?.books);
   suppressCloudSync = true;
   saveItems(state.items);
+  saveBooks(state.books);
   suppressCloudSync = false;
 }
 function cloudDataPayload() {
-  return { version: 3, savedAt: new Date().toISOString(), items: state.items };
+  return { version: 3, savedAt: new Date().toISOString(), items: state.items, books: state.books };
 }
 function setSyncStatus(msg, busy = false) {
   state.sync.status = msg;
@@ -1868,8 +2009,10 @@ function showToast(msg, undoFn) {
 // ---------- 初始化 ----------
 function init() {
   state.items = fixEssenceMidoriOnce(loadAndMigrateItems());
+  state.books = loadBooks();
   suppressCloudSync = true;
   saveItems(state.items); // 持久化迁移/补全结果
+  seedPresetBooks();
   suppressCloudSync = false;
   $$('.nav-btn').forEach(btn => btn.addEventListener('click', () => navigate(btn.dataset.view)));
   $('#import-file').addEventListener('change', onImportFile);
