@@ -388,8 +388,9 @@ body::before {
   position: fixed; inset: 0; z-index: 100; background: var(--bg);
   display: flex; flex-direction: column;
   padding-top: env(safe-area-inset-top);
-  animation: sessionIn .32s cubic-bezier(.22, .61, .36, 1);
 }
+/* 外壳入场只在进入专注模式时播一次；之后评级只换卡片，顶栏/按钮不再闪 */
+.session.enter { animation: sessionIn .34s cubic-bezier(.22, .61, .36, 1); }
 @keyframes sessionIn { from { opacity: 0; transform: translateY(26px); } to { opacity: 1; transform: none; } }
 .session::before {
   content: ""; position: absolute; inset: 0 0 auto 0; height: 300px; pointer-events: none;
@@ -413,10 +414,13 @@ body::before {
 .session-source { font-size: 20px; font-weight: 650; line-height: 1.45; letter-spacing: -.01em; }
 .session-card .task-meta { margin-top: 12px; }
 .session-card .task-note { margin-top: 12px; }
-.session-card.swap-out { animation: swapOut .18s cubic-bezier(.4, 0, 1, 1) forwards; }
-.session-card.swap-in { animation: swapIn .26s cubic-bezier(.22, .61, .36, 1); }
-@keyframes swapOut { to { opacity: 0; transform: translateX(-28px) rotate(-.6deg); } }
-@keyframes swapIn { from { opacity: 0; transform: translateX(32px); } to { opacity: 1; transform: none; } }
+/* 重叠式换卡：旧卡以"发牌"姿态滑出（克隆幽灵层），新卡同时从对侧滑入，全程无空档 */
+.session-card.swap-in { animation: swapIn .46s cubic-bezier(.22, 1, .36, 1); }
+.session-card.swap-in-rev { animation: swapInRev .46s cubic-bezier(.22, 1, .36, 1); }
+@keyframes swapIn { from { opacity: 0; transform: translateX(46px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes swapInRev { from { opacity: 0; transform: translateX(-46px) scale(.97); } to { opacity: 1; transform: none; } }
+.session-card.ghost-out { animation: ghostOut .42s cubic-bezier(.5, 0, .75, .6) forwards; pointer-events: none; z-index: 2; will-change: transform, opacity; }
+@keyframes ghostOut { to { opacity: 0; transform: translateX(-76px) rotate(-2.4deg) scale(.95); } }
 .session-foot { padding: 10px 16px calc(16px + env(safe-area-inset-bottom)); max-width: 620px; width: 100%; margin: 0 auto; position: relative; }
 .session-rate { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
 .session-undo {
@@ -428,6 +432,11 @@ body::before {
 .session-undo.hidden { display: none; }
 /* 会话总结 */
 .session-summary { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px; position: relative; max-width: 620px; width: 100%; margin: 0 auto; }
+.session-summary > * { animation: viewEnter .44s cubic-bezier(.22, .61, .36, 1) both; }
+.session-summary > *:nth-child(2) { animation-delay: .05s; }
+.session-summary > *:nth-child(3) { animation-delay: .1s; }
+.session-summary > *:nth-child(4) { animation-delay: .15s; }
+.session-summary > *:nth-child(n+5) { animation-delay: .2s; }
 .session-summary .empty-title { font-size: 21px; }
 .sum-sub { font-size: 13px; color: var(--muted); margin-top: 2px; }
 .sum-grid { display: flex; gap: 34px; margin: 26px 0 8px; }
@@ -1211,7 +1220,7 @@ function sessionCurrentItem() {
   return null;
 }
 
-function renderSession() {
+function renderSession(dir) {
   const root = $('#session-root');
   if (!root) return;
   if (!session) { root.innerHTML = ''; return; }
@@ -1227,7 +1236,9 @@ function renderSession() {
     ? `<span class="tag grad">已毕业 · 抽查</span>`
     : `<span class="tag stage">档位 ${item.intervalIndex + 1}/${seq.length} · ${seq[item.intervalIndex]}天</span>`;
   const pctDone = Math.round(rated / total * 100);
-  root.innerHTML = `<div class="session">
+  // 卡片入场方向：评级→新卡从右滑入；撤销→原卡从左返回
+  const enterClass = prefersReducedMotion() ? '' : (dir === 'back' ? 'swap-in-rev' : 'swap-in');
+  root.innerHTML = `<div class="session ${session.entered ? '' : 'enter'}">
     <div class="session-top">
       <button class="session-close" onclick="endSession()" aria-label="退出复习">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
@@ -1236,7 +1247,7 @@ function renderSession() {
       <span class="session-count">${Math.min(rated + 1, total)}/${total}</span>
     </div>
     <div class="session-body">
-      <div class="session-card ${late ? 'overdue' : ''} ${isGrad ? 'gradcheck' : ''} ${prefersReducedMotion() ? '' : 'swap-in'}" id="session-card">
+      <div class="session-card ${late ? 'overdue' : ''} ${isGrad ? 'gradcheck' : ''} ${enterClass}" id="session-card">
         <div class="session-source">${escapeHtml(item.source)}</div>
         <div class="task-meta">
           <span class="tag board-${item.board}">${BOARDS[item.board]}</span>
@@ -1256,6 +1267,35 @@ function renderSession() {
       <button class="session-undo ${sessionUndoInfo ? '' : 'hidden'}" onclick="sessionUndo()">撤销上一题</button>
     </div>
   </div>`;
+  session.entered = true;
+}
+
+// 重叠式换卡：克隆旧卡为幽灵层滑出，同一时刻新卡滑入；进度条从旧值平滑推进
+function animateCardSwap(prevPct) {
+  const oldCard = $('#session-card');
+  const oldBody = $('.session-body');
+  if (!oldCard || !oldBody) { renderSession(); return; }
+  const ghost = oldCard.cloneNode(true);
+  const r = oldCard.getBoundingClientRect();
+  const br = oldBody.getBoundingClientRect();
+  renderSession();
+  const body = $('.session-body'); // 总结页没有 body，此时自然跳过幽灵层
+  if (body) {
+    ghost.removeAttribute('id');
+    ghost.className = oldCard.className.replace(/swap-in(-rev)?/g, '').trim() + ' ghost-out';
+    ghost.style.cssText = `position:absolute;left:${r.left - br.left}px;top:${r.top - br.top}px;width:${r.width}px;margin:0;`;
+    body.appendChild(ghost);
+    setTimeout(() => ghost.remove(), 460);
+  }
+  const bar = $('.session-progress i');
+  if (bar && Number.isFinite(prevPct)) {
+    const target = bar.style.width;
+    bar.style.transition = 'none';
+    bar.style.width = prevPct + '%';
+    void bar.offsetWidth; // 回流后恢复过渡，让宽度从旧值滑到新值
+    bar.style.transition = '';
+    bar.style.width = target;
+  }
 }
 
 function sessionRate(rating) {
@@ -1265,14 +1305,20 @@ function sessionRate(rating) {
   const before = JSON.parse(JSON.stringify(item));
   applyRating(item, rating, todayStr());
   saveItems(state.items); // 与列表评级同一数据路径，先落盘
+  const total = session.queue.length;
+  const ratedBefore = session.counts['○'] + session.counts['△'] + session.counts['×'];
   session.counts[rating]++;
   sessionUndoInfo = { id: item.id, before, rating, idx: session.idx };
   session.idx++;
   if (navigator.vibrate) { try { navigator.vibrate(8); } catch (e) {} }
   const card = $('#session-card');
   if (card && !prefersReducedMotion()) {
-    card.classList.add('swap-out');
-    setTimeout(renderSession, 170);
+    const btn = typeof event !== 'undefined' && event && event.target && event.target.closest
+      ? event.target.closest('.rate-btn') : null;
+    if (btn) btn.classList.add('pressed');
+    const prevPct = Math.round(ratedBefore / total * 100);
+    // 让按钮脉冲先被看到一瞬，再无缝换卡
+    setTimeout(() => animateCardSwap(prevPct), 110);
   } else {
     renderSession();
   }
@@ -1289,7 +1335,7 @@ function sessionUndo() {
   session.counts[sessionUndoInfo.rating] = Math.max(0, session.counts[sessionUndoInfo.rating] - 1);
   session.idx = sessionUndoInfo.idx;
   sessionUndoInfo = null;
-  renderSession();
+  renderSession('back');
 }
 window.sessionUndo = sessionUndo;
 
