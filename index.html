@@ -231,6 +231,9 @@ body::before {
 }
 .subject-pick button:hover { border-color: var(--hover-border); }
 .subject-pick button.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; box-shadow: inset 0 0 0 1px var(--accent); }
+/* 选中态落位轻弹：刚点选的选项有"按进去又弹回"的确认感 */
+@keyframes settlePop { from { transform: scale(.94); } to { transform: none; } }
+.subject-pick button.on, .book-chip.on { animation: settlePop .24s var(--ease-spring); }
 .subject-pick.seg { background: var(--surface-2); border-radius: 12px; padding: 3px; gap: 3px; }
 .subject-pick.seg button { border: 0; background: transparent; border-radius: 9px; min-height: 40px; color: var(--muted); }
 .subject-pick.seg button:hover { color: var(--text); }
@@ -361,12 +364,33 @@ body::before {
 /* ---------- 题库 ---------- */
 .lib-item { border-top: 1px solid var(--line); padding: 13px 2px; }
 .lib-item:first-child { border-top: 0; }
+/* 删除行：向右抽走 + 高度收拢，下方行平滑补位 */
+.lib-item.leaving {
+  opacity: 0; transform: translateX(40px); pointer-events: none;
+  height: 0 !important; padding-top: 0 !important; padding-bottom: 0 !important;
+  border-top-width: 0; overflow: hidden;
+  transition: transform .24s var(--ease-in), opacity .18s var(--ease-in),
+    height .3s var(--ease-smooth) .05s, padding .3s var(--ease-smooth) .05s,
+    border-width .3s var(--ease-smooth) .05s;
+}
+/* 新录入的行：从左滑入 + 琥珀余晖渐隐 */
+@keyframes rowIn { from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: none; } }
+@keyframes glowFade { from { background-color: var(--accent-soft); } to { background-color: transparent; } }
+.lib-item.row-in { animation: rowIn .42s var(--ease-out), glowFade 1.2s var(--ease-smooth) forwards; border-radius: 10px; }
+/* 撤销/恢复：目标处高亮渐隐，指引视线 */
+.flash-back { animation: glowFade 1.1s var(--ease-smooth); border-radius: var(--radius); }
+/* 筛选切换：列表整体轻柔刷新 */
+@keyframes listIn { from { opacity: .3; transform: translateY(5px); } to { opacity: 1; transform: none; } }
+.list-in { animation: listIn .32s var(--ease-out); }
 .lib-main { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; cursor: pointer; }
 .chev { flex: none; padding-top: 3px; color: var(--faint); }
 .chev svg { width: 16px; height: 16px; stroke-width: 2; transition: transform .3s var(--ease-spring); }
 .chev.open svg { transform: rotate(180deg); }
 .lib-detail { margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--line); animation: detailIn .32s var(--ease-out); }
 @keyframes detailIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+/* 收起详情 = 展开的逆动画 */
+.lib-detail.detail-out { animation: detailOut .18s var(--ease-in) forwards; }
+@keyframes detailOut { to { opacity: 0; transform: translateY(-6px); } }
 .hist-list { font-family: var(--font-mono); font-size: 12px; color: var(--muted); margin: 10px 0; display: flex; flex-wrap: wrap; gap: 5px; }
 .hist-pill { border: 1px solid var(--line); border-radius: 6px; padding: 2px 7px; background: var(--surface-2); }
 
@@ -405,6 +429,9 @@ body::before {
 }
 /* 外壳入场只在进入专注模式时播一次；之后评级只换卡片，顶栏/按钮不再闪 */
 .session.enter { animation: sessionIn .44s var(--ease-out); }
+/* 退出专注模式 = 入场的逆播放（下沉淡出） */
+.session.leave { animation: sessionOut .3s var(--ease-in) forwards; pointer-events: none; }
+@keyframes sessionOut { to { opacity: 0; transform: translateY(30px) scale(.99); } }
 @keyframes sessionIn { from { opacity: 0; transform: translateY(32px) scale(.99); } to { opacity: 1; transform: none; } }
 .session::before {
   content: ""; position: absolute; inset: 0 0 auto 0; height: 300px; pointer-events: none;
@@ -1160,7 +1187,7 @@ function taskCard(item, today) {
   const stage = isGrad
     ? `<span class="tag grad">已毕业 · 抽查</span>`
     : `<span class="tag stage">档位 ${item.intervalIndex + 1}/${seq.length} · ${seq[item.intervalIndex]}天</span>`;
-  return `<div class="task-card ${late ? 'overdue' : ''} ${isGrad ? 'gradcheck' : ''}">
+  return `<div class="task-card ${late ? 'overdue' : ''} ${isGrad ? 'gradcheck' : ''}" data-id="${item.id}">
     <div class="task-top"><div class="task-source">${escapeHtml(item.source)}</div></div>
     <div class="task-meta">
       <span class="tag board-${item.board}">${BOARDS[item.board]}</span>
@@ -1177,6 +1204,15 @@ function taskCard(item, today) {
   </div>`;
 }
 
+// 撤销/恢复后高亮目标卡片或行，指引视线回到被恢复的内容
+function flashCard(id) {
+  requestAnimationFrame(() => {
+    const el = document.querySelector(`[data-id="${id}"]`);
+    if (!el) return;
+    el.classList.add('flash-back');
+    setTimeout(() => el.classList.remove('flash-back'), 1150);
+  });
+}
 function rateItem(id, rating, evt) {
   const item = state.items.find(i => i.id === id);
   if (!item) return;
@@ -1196,6 +1232,7 @@ function rateItem(id, rating, evt) {
       Object.assign(item, before);
       saveItems(state.items);
       render();
+      flashCard(item.id);
     });
   };
   // 按钮脉冲 + 卡片退场，再重渲染（reduced-motion 时直接完成）
@@ -1388,11 +1425,20 @@ function renderSessionSummary() {
 }
 
 function endSession() {
-  session = null;
-  sessionUndoInfo = null;
   const root = $('#session-root');
-  if (root) root.innerHTML = '';
-  render();
+  const shell = root ? root.querySelector('.session') : null;
+  const done = () => {
+    session = null;
+    sessionUndoInfo = null;
+    if (root) root.innerHTML = '';
+    render();
+  };
+  if (shell && !prefersReducedMotion()) {
+    shell.classList.add('leave');
+    setTimeout(done, 280);
+  } else {
+    done();
+  }
 }
 window.endSession = endSession;
 
@@ -1447,16 +1493,17 @@ function renderEntry() {
   if (!todayItems.length) {
     html += `<div class="card small center">还没有录入题目</div>`;
   } else {
-    html += `<div class="card">` + todayItems.map(i => `<div class="lib-item">
+    html += `<div class="card">` + todayItems.map(i => `<div class="lib-item ${i.id === state.justAdded ? 'row-in' : ''}" data-id="${i.id}">
       <div class="lib-main">
         <div class="flex1"><div>${escapeHtml(i.source)}</div>
           <div class="task-meta"><span class="tag board-${i.board}">${BOARDS[i.board]}</span><span class="tag subj">${escapeHtml(i.subject)}</span><span class="tag">首次复习 ${displayDate(i.dueDate)}</span></div>
         </div>
-        <button class="btn small secondary" onclick="deleteItem('${i.id}')">删除</button>
+        <button class="btn small secondary" onclick="deleteItem('${i.id}',event)">删除</button>
       </div>
     </div>`).join('') + `</div>`;
   }
   setMain(html);
+  state.justAdded = null; // 入场余晖只播一次
   const input = $('#entry-num') || $('#entry-source');
   if (input) input.addEventListener('keydown', e => { if (e.key === 'Enter') addItem(); });
 }
@@ -1521,6 +1568,7 @@ function addItem() {
   const item = createItem(state.entrySubject, source, note, todayStr(), state.entryBoard);
   state.items.push(item);
   saveItems(state.items);
+  state.justAdded = item.id; // 新行以滑入+余晖入场
   render();
   showToast(`已添加，${displayDate(item.dueDate)} 首次复习`);
   // 连续录入同一本书：保持书目选中，只清空并聚焦题号
@@ -1528,19 +1576,33 @@ function addItem() {
 }
 window.addItem = addItem;
 
-function deleteItem(id) {
+function deleteItem(id, evt) {
   const idx = state.items.findIndex(i => i.id === id);
   if (idx < 0) return;
   const removed = state.items[idx];
   if (!confirm(`删除「${removed.source}」？`)) return;
-  state.items.splice(idx, 1);
-  saveItems(state.items);
-  render();
-  showToast('已删除', () => {
-    state.items.push(removed);
+  const proceed = () => {
+    const at = state.items.indexOf(removed);
+    if (at < 0) { render(); return; } // 动画期间列表已被其他来源改动（如云同步合并），放弃本次删除
+    state.items.splice(at, 1);
     saveItems(state.items);
     render();
-  });
+    showToast('已删除', () => {
+      state.items.push(removed);
+      saveItems(state.items);
+      render();
+      flashCard(removed.id);
+    });
+  };
+  const row = evt && evt.target && evt.target.closest ? evt.target.closest('.lib-item') : null;
+  if (row && !prefersReducedMotion()) {
+    row.style.height = row.offsetHeight + 'px';
+    void row.offsetWidth;
+    row.classList.add('leaving');
+    setTimeout(proceed, 330);
+  } else {
+    proceed();
+  }
 }
 window.deleteItem = deleteItem;
 
@@ -1569,16 +1631,16 @@ function renderLibrary() {
     <input type="text" class="form-input mb8" placeholder="搜索出处 / 备注" value="${escapeHtml(state.libSearch)}"
       oninput="state.libSearch=this.value; renderLibraryListOnly()">
     <div class="row">
-      <select class="form-input flex1" onchange="state.libBoard=this.value; renderLibrary()">
+      <select class="form-input flex1" onchange="state.libBoard=this.value; state.libAnim=1; renderLibrary()">
         <option value="all">全部类型</option>
         ${Object.entries(BOARDS).map(([k, label]) =>
           `<option value="${k}" ${k === state.libBoard ? 'selected' : ''}>${label}</option>`).join('')}
       </select>
-      <select class="form-input flex1" onchange="state.libSubject=this.value; renderLibrary()">
+      <select class="form-input flex1" onchange="state.libSubject=this.value; state.libAnim=1; renderLibrary()">
         <option value="all">全部科目</option>
         ${subjects.map(s => `<option value="${escapeHtml(s)}" ${s === state.libSubject ? 'selected' : ''}>${escapeHtml(s)}</option>`).join('')}
       </select>
-      <select class="form-input flex1" onchange="state.libStatus=this.value; renderLibrary()">
+      <select class="form-input flex1" onchange="state.libStatus=this.value; state.libAnim=1; renderLibrary()">
         <option value="all">全部状态</option>
         <option value="learning" ${state.libStatus === 'learning' ? 'selected' : ''}>循环中</option>
         <option value="graduated" ${state.libStatus === 'graduated' ? 'selected' : ''}>已毕业</option>
@@ -1586,8 +1648,9 @@ function renderLibrary() {
     </div>
   </div>
   <div class="section-title">共 ${list.length} 题</div>
-  <div class="card" id="lib-list">${renderLibraryList(list, today)}</div>`;
+  <div class="card ${state.libAnim ? 'list-in' : ''}" id="lib-list">${renderLibraryList(list, today)}</div>`;
   setMain(html);
+  state.libAnim = 0; // 刷新动画只在筛选切换时播一次
 }
 function renderLibraryListOnly() {
   const el = $('#lib-list');
@@ -1616,11 +1679,11 @@ function renderLibraryList(list, today) {
         <input type="text" class="form-input" id="edit-note-${i.id}" value="${escapeHtml(i.note)}">
         <div class="row mt12">
           <button class="btn small" onclick="saveItemEdit('${i.id}')">保存修改</button>
-          <button class="btn small danger" onclick="deleteItem('${i.id}')">删除</button>
+          <button class="btn small danger" onclick="deleteItem('${i.id}',event)">删除</button>
         </div>
       </div>`;
     }
-    return `<div class="lib-item">
+    return `<div class="lib-item" data-id="${i.id}">
       <div class="lib-main" onclick="toggleLibItem('${i.id}')">
         <div class="flex1">
           <div>${escapeHtml(i.source)}</div>
@@ -1639,8 +1702,21 @@ function renderLibraryList(list, today) {
   }).join('');
 }
 function toggleLibItem(id) {
-  if (state.libExpanded.has(id)) state.libExpanded.delete(id);
-  else state.libExpanded.add(id);
+  const isOpen = state.libExpanded.has(id);
+  if (isOpen) {
+    state.libExpanded.delete(id);
+    // 收起 = 展开的逆动画，播完再重渲染
+    const detail = document.querySelector(`.lib-item[data-id="${id}"] .lib-detail`);
+    const chev = document.querySelector(`.lib-item[data-id="${id}"] .chev`);
+    if (detail && !prefersReducedMotion()) {
+      if (chev) chev.classList.remove('open');
+      detail.classList.add('detail-out');
+      setTimeout(renderLibrary, 165);
+      return;
+    }
+  } else {
+    state.libExpanded.add(id);
+  }
   renderLibrary();
 }
 window.toggleLibItem = toggleLibItem;
