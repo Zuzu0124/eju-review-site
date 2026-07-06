@@ -40,6 +40,7 @@
   --mid: #a16207;   --mid-soft: #faf3d9;   --mid-border: #eadfa8;
   --bad: #dc2626;   --bad-soft: #fdecec;   --bad-border: #f3cccc;
   --grad: #0f766e;  --grad-soft: #e4f3f1;  --grad-border: #bfe0dc;
+  --kako: #2563eb;  --kako-soft: #e9effc;  --kako-btn: #2563eb;
   --overdue-border: #f0caca;
   --gradcheck-border: #c4ded9;
   --bar: #b45309;
@@ -80,6 +81,7 @@
     --mid: #facc15;   --mid-soft: rgba(202, 138, 4, .13);    --mid-border: rgba(250, 204, 21, .28);
     --bad: #f87171;   --bad-soft: rgba(239, 68, 68, .13);    --bad-border: rgba(248, 113, 113, .3);
     --grad: #2dd4bf;  --grad-soft: rgba(20, 184, 166, .13);  --grad-border: rgba(45, 212, 191, .3);
+    --kako: #7da9f8;  --kako-soft: rgba(59, 130, 246, .15);  --kako-btn: #2f62d8;
     --overdue-border: rgba(248, 113, 113, .32);
     --gradcheck-border: rgba(45, 212, 191, .32);
     --bar: #d97706;
@@ -188,6 +190,7 @@ body::before {
 .btn.secondary { background: var(--card); color: var(--text); border-color: var(--line); box-shadow: var(--shadow-sm); }
 .btn.secondary:hover { background: var(--surface-2); filter: none; border-color: var(--hover-border); }
 .btn.danger { background: var(--bad); }
+.btn.kako { background: var(--kako-btn); }
 .btn.small { font-size: 13px; padding: 8px 13px; min-height: 38px; }
 .btn.block { display: block; width: 100%; }
 
@@ -227,6 +230,9 @@ body::before {
 .subject-pick.seg button { border: 0; background: transparent; border-radius: 9px; min-height: 40px; color: var(--muted); }
 .subject-pick.seg button:hover { color: var(--text); }
 .subject-pick.seg button.on { background: var(--card); color: var(--text); font-weight: 600; box-shadow: var(--shadow-sm), inset 0 0 0 1px var(--line); }
+/* 母题/过去问的颜色身份（录入页分段控件） */
+.subject-pick.seg button.on.bm { background: var(--accent-soft); color: var(--accent); box-shadow: var(--shadow-sm), inset 0 0 0 1.5px var(--accent); }
+.subject-pick.seg button.on.bk { background: var(--kako-soft); color: var(--kako); box-shadow: var(--shadow-sm), inset 0 0 0 1.5px var(--kako); }
 
 /* 常用书目胶囊 */
 .book-chips { display: flex; flex-wrap: wrap; gap: 7px; }
@@ -287,6 +293,7 @@ body::before {
 .tag.subj { background: var(--accent-soft); color: var(--accent); }
 .tag.late { background: var(--bad-soft); color: var(--bad); font-weight: 600; }
 .tag.grad { background: var(--grad-soft); color: var(--grad); font-weight: 600; }
+.tag.board-kakomon { background: var(--kako-soft); color: var(--kako); font-weight: 600; }
 .task-note { font-size: 13px; color: var(--muted); margin-top: 8px; white-space: pre-wrap; padding: 8px 10px; background: var(--surface-2); border: 1px solid var(--line); border-radius: 8px; }
 
 /* 评级按钮 */
@@ -765,6 +772,26 @@ function fixEssenceMidoriOnce(items) {
   return items;
 }
 
+// 科目名一次性规整：旧科目「数学コース2」统一为「数学」。
+// 两者同为程序性序列，档位/到期日不受影响；仅在确有改动时刷新 updatedAt，
+// 以便在跨设备合并中胜出并传播到云端。
+const FIX_SUBJECT_MATH_FLAG = 'eju.fix.subjectMath.v1';
+function fixMathSubjectName(items) {
+  for (const it of items) {
+    if (it.subject === '数学コース2') {
+      it.subject = '数学';
+      it.updatedAt = new Date().toISOString();
+    }
+  }
+  return items;
+}
+function fixMathSubjectNameOnce(items) {
+  try { if (localStorage.getItem(FIX_SUBJECT_MATH_FLAG)) return items; } catch (e) {}
+  fixMathSubjectName(items);
+  try { localStorage.setItem(FIX_SUBJECT_MATH_FLAG, new Date().toISOString()); } catch (e) {}
+  return items;
+}
+
 // ---------- 常用书目（按 类型|科目 分组，录入时点选书名 + 手输题号） ----------
 function bookKey(board, subject) { return `${board}|${subject}`; }
 function normalizeBooks(b) {
@@ -1103,7 +1130,7 @@ function taskCard(item, today) {
   return `<div class="task-card ${late ? 'overdue' : ''} ${isGrad ? 'gradcheck' : ''}">
     <div class="task-top"><div class="task-source">${escapeHtml(item.source)}</div></div>
     <div class="task-meta">
-      <span class="tag">${BOARDS[item.board]}</span>
+      <span class="tag board-${item.board}">${BOARDS[item.board]}</span>
       <span class="tag subj">${escapeHtml(item.subject)}</span>
       ${stage}
       ${late ? `<span class="tag late">逾期 ${late} 天</span>` : ''}
@@ -1205,7 +1232,7 @@ function renderSession() {
       <div class="session-card ${late ? 'overdue' : ''} ${isGrad ? 'gradcheck' : ''} ${prefersReducedMotion() ? '' : 'swap-in'}" id="session-card">
         <div class="session-source">${escapeHtml(item.source)}</div>
         <div class="task-meta">
-          <span class="tag">${BOARDS[item.board]}</span>
+          <span class="tag board-${item.board}">${BOARDS[item.board]}</span>
           <span class="tag subj">${escapeHtml(item.subject)}</span>
           ${stage}
           ${late ? `<span class="tag late">逾期 ${late} 天</span>` : ''}
@@ -1316,7 +1343,7 @@ function renderEntry() {
   html += `<div class="card">
     <label class="form-label" style="margin-top:0">类型</label>
     <div class="subject-pick seg">${Object.entries(BOARDS).map(([k, label]) =>
-      `<button class="${k === state.entryBoard ? 'on' : ''}" onclick="setEntryBoard('${k}')">${label}</button>`).join('')}
+      `<button class="${k === 'kakomon' ? 'bk' : 'bm'} ${k === state.entryBoard ? 'on' : ''}" onclick="setEntryBoard('${k}')">${label}</button>`).join('')}
     </div>
     <label class="form-label">科目</label>
     <div class="subject-pick">${SUBJECTS.map(s =>
@@ -1340,7 +1367,7 @@ function renderEntry() {
     `}
     <label class="form-label">备注（可选）</label>
     <input type="text" class="form-input" id="entry-note" placeholder="易错点、思路提示等">
-    <button class="btn block mt12" onclick="addItem()">添加${BOARDS[state.entryBoard]}（明天开始复习）</button>
+    <button class="btn block mt12 ${state.entryBoard === 'kakomon' ? 'kako' : ''}" onclick="addItem()">添加${BOARDS[state.entryBoard]}（明天开始复习）</button>
   </div>`;
   html += `<div class="section-title">今日已录入 (${todayItems.length})</div>`;
   if (!todayItems.length) {
@@ -1349,7 +1376,7 @@ function renderEntry() {
     html += `<div class="card">` + todayItems.map(i => `<div class="lib-item">
       <div class="lib-main">
         <div class="flex1"><div>${escapeHtml(i.source)}</div>
-          <div class="task-meta"><span class="tag">${BOARDS[i.board]}</span><span class="tag subj">${escapeHtml(i.subject)}</span><span class="tag">首次复习 ${displayDate(i.dueDate)}</span></div>
+          <div class="task-meta"><span class="tag board-${i.board}">${BOARDS[i.board]}</span><span class="tag subj">${escapeHtml(i.subject)}</span><span class="tag">首次复习 ${displayDate(i.dueDate)}</span></div>
         </div>
         <button class="btn small secondary" onclick="deleteItem('${i.id}')">删除</button>
       </div>
@@ -1524,7 +1551,7 @@ function renderLibraryList(list, today) {
         <div class="flex1">
           <div>${escapeHtml(i.source)}</div>
           <div class="task-meta">
-            <span class="tag">${BOARDS[i.board]}</span>
+            <span class="tag board-${i.board}">${BOARDS[i.board]}</span>
             <span class="tag subj">${escapeHtml(i.subject)}</span>
             ${isGrad
               ? `<span class="tag grad">已毕业</span><span class="tag">抽查 ${displayDate(i.dueDate)}</span>`
@@ -1756,6 +1783,7 @@ function clearAllData() {
   localStorage.removeItem(KEYS.MIGRATED_FLAG);
   localStorage.removeItem(KEYS.TIER_REPLAY_FLAG);
   localStorage.removeItem(KEYS.FIX_ESSENCE_FLAG);
+  localStorage.removeItem(FIX_SUBJECT_MATH_FLAG);
   localStorage.removeItem(KEYS.BOOKS);
   localStorage.removeItem(BOOKS_SEED_FLAG);
   state.items = [];
@@ -2008,7 +2036,7 @@ function showToast(msg, undoFn) {
 
 // ---------- 初始化 ----------
 function init() {
-  state.items = fixEssenceMidoriOnce(loadAndMigrateItems());
+  state.items = fixMathSubjectNameOnce(fixEssenceMidoriOnce(loadAndMigrateItems()));
   state.books = loadBooks();
   suppressCloudSync = true;
   saveItems(state.items); // 持久化迁移/补全结果
