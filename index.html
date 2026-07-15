@@ -417,8 +417,10 @@ body::before {
 .bar { width: 100%; max-width: 14px; background: var(--bar); border-radius: 4px 4px 1px 1px; min-height: 3px; transform-origin: bottom; animation: barGrow .65s var(--ease-out) both; }
 .bar.zero { background: var(--bar-zero); }
 .bar.today { background: linear-gradient(180deg, var(--brand-to), var(--bar-today)); }
-.bar-val { font-family: var(--font-mono); font-size: 9.5px; font-weight: 700; color: var(--accent); margin-bottom: 3px; line-height: 1; }
-.bar-x { font-family: var(--font-mono); font-size: 9px; color: var(--faint); margin-top: 6px; }
+.bar-val { font-family: var(--font-mono); font-size: 9.5px; font-weight: 700; color: var(--accent); margin-bottom: 3px; line-height: 1; white-space: nowrap; }
+/* X 轴标签独立成行、绝对定位：列宽在手机上只有几像素，放进列里会被逐字折行 */
+.bars-x { position: relative; height: 13px; margin-top: 6px; }
+.bar-x { position: absolute; top: 0; font-family: var(--font-mono); font-size: 9px; color: var(--faint); line-height: 1; white-space: nowrap; }
 @keyframes barGrow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
 
 /* ---------- 专注模式 ---------- */
@@ -555,7 +557,7 @@ button:focus-visible, .nav-btn:focus-visible, .subject-pick button:focus-visible
 <script>
 'use strict';
 // 应用版本号：每次发布更新（数据页底部可见，便于确认设备上跑的是哪一版）
-const APP_VERSION = '2026-07-06.1';
+const APP_VERSION = '2026-07-15.1';
 /* ============================================================
  * EJU 间隔复习 — 单文件应用
  * 数据: localStorage（eju.items.v2）；旧版 eju.items.v1 自动迁移且保留不动
@@ -1803,8 +1805,15 @@ function renderStats() {
     <div class="bars">${days.map((d, i) => `<div class="bar-col" title="${d}: ${counts[i]}题">
       ${i === 29 && counts[i] > 0 ? `<div class="bar-val">${counts[i]}</div>` : ''}
       <div class="bar ${counts[i] === 0 ? 'zero' : ''} ${i === 29 ? 'today' : ''}" style="height:${Math.max(2, Math.round(counts[i] / max * 84))}px;animation-delay:${i * 12}ms"></div>
-      ${i % 7 === 0 || i === 29 ? `<div class="bar-x">${d.slice(5).replace('-', '/')}</div>` : '<div class="bar-x">&nbsp;</div>'}
     </div>`).join('')}</div>
+    <div class="bars-x">${days.map((d, i) => {
+      // 每 7 天一个刻度 + 最右（今天）；紧邻今天的第 28 格不打，避免两个标签相撞
+      if (!((i % 7 === 0 && i < 28) || i === 29)) return '';
+      const label = d.slice(5).replace('-', '/');
+      const pos = i === 0 ? 'left:0' : i === 29 ? 'right:0'
+        : `left:${((i + 0.5) / 30 * 100).toFixed(2)}%;transform:translateX(-50%)`;
+      return `<span class="bar-x" style="${pos}">${label}</span>`;
+    }).join('')}</div>
     <div class="tiny mt12 center">最近 30 天共完成 ${counts.reduce((a, b) => a + b, 0)} 题次 · 单日最高 ${Math.max(0, ...counts)} 题</div>
   </div>`;
 
