@@ -1,2 +1,2 @@
 [functions.learning-os-sync]
-verify_jwt = true
+verify_jwt = false
