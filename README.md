@@ -7,7 +7,7 @@ EJU review task generator single page app
 ## AI Learning OS / Google Sheets sync
 
 `index.html` records every new review as an event with a stable ID. After the
-undo window, authenticated users call the `learning-os-sync` Supabase Edge
+undo window, authenticated users call the `learning-os-sheet-sync-v6` Supabase Edge
 Function. The function:
 
 1. looks for an existing `eju_review_id` link;
@@ -30,29 +30,24 @@ review_event_id
 
 The target workbook used by this project already has these columns.
 
-### Deploy the Edge Function
+### Deploy the Apps Script and Edge Function
 
-Create a Google Cloud service account with Google Sheets API access and share the
-target spreadsheet with its `client_email` as an editor. Never commit the service
-account JSON.
+Deploy the bound Google Apps Script as a web app that executes as the spreadsheet
+owner. Keep its URL and shared random sync secret out of the repository.
 
 ```bash
 supabase secrets set \
-  GOOGLE_SPREADSHEET_ID=your_spreadsheet_id \
-  GOOGLE_SHEET_NAME=learning_log \
-  GOOGLE_SERVICE_ACCOUNT_JSON='{"type":"service_account",...}'
+  APPS_SCRIPT_URL='https://script.google.com/macros/s/.../exec' \
+  APPS_SCRIPT_SYNC_SECRET='a-long-random-secret'
 
-supabase functions deploy learning-os-sync
+supabase functions deploy learning-os-sheet-sync-v6
 ```
 
-`SUPABASE_URL` and `SUPABASE_ANON_KEY` are supplied automatically by Supabase.
 The browser must be signed in with the app's existing Supabase account before
 Learning OS synchronization runs.
 
-The function sets `verify_jwt = false` only to bypass Supabase's legacy gateway
-JWT checker. The function itself still requires an `Authorization` header and
-validates the signed-in user with `auth.getUser()` before accessing Google
-Sheets.
+The function keeps legacy JWT verification enabled. The Apps Script rejects
+requests that do not contain the matching Edge Function sync secret.
 
 ### Rating mapping
 
