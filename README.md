@@ -49,6 +49,11 @@ supabase functions deploy learning-os-sync
 The browser must be signed in with the app's existing Supabase account before
 Learning OS synchronization runs.
 
+The function sets `verify_jwt = false` only to bypass Supabase's legacy gateway
+JWT checker. The function itself still requires an `Authorization` header and
+validates the signed-in user with `auth.getUser()` before accessing Google
+Sheets.
+
 ### Rating mapping
 
 | Website rating | `correct` | `error_group` | `mastery_note` |
