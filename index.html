@@ -2190,6 +2190,14 @@ function learningOsCounts() {
   return counts;
 }
 
+function learningOsMatchedItemCount() {
+  const matched = new Set();
+  learningOsEvents().forEach(({ item, event }) => {
+    if (event.learningOsSync === 'synced') matched.add(item.id);
+  });
+  return matched.size;
+}
+
 function queueLearningOsSync(_itemId, _eventId, delay = 6500) {
   clearTimeout(learningOsSyncTimer);
   learningOsSyncTimer = setTimeout(() => {
@@ -2261,9 +2269,7 @@ async function syncPendingReviewEvents(silent = false) {
   if (state.view === 'data') renderData();
   const counts = learningOsCounts();
   if (!silent) {
-    showToast(counts.pending + counts.unmatched + counts.ambiguous + counts.error
-      ? '同步完成，仍有未匹配或失败记录'
-      : 'Learning OS 已同步');
+    showToast(counts.error ? '匹配检查完成；部分同步请求失败，可稍后重试' : 'Learning OS 匹配检查完成');
   }
 }
 window.syncPendingReviewEvents = syncPendingReviewEvents;
@@ -2271,19 +2277,13 @@ window.syncPendingReviewEvents = syncPendingReviewEvents;
 function renderLearningOsSyncCard() {
   const c = learningOsCounts();
   const waiting = c.pending + c.unmatched + c.ambiguous + c.error;
-  const details = [
-    `已同步 ${c.synced}`,
-    c.pending ? `待处理 ${c.pending}` : '',
-    c.unmatched ? `未匹配 ${c.unmatched}` : '',
-    c.ambiguous ? `匹配冲突 ${c.ambiguous}` : '',
-    c.error ? `失败 ${c.error}` : '',
-  ].filter(Boolean).join(' · ');
+  const matched = learningOsMatchedItemCount();
   return `<div class="card">
     <div class="section-title" style="margin-top:0">AI Learning OS</div>
     <div class="small mb12">匹配到 Google Sheets 原题时，复习结果会作为新作答追加；不会覆盖原记录。</div>
-    <div class="tiny mb12">${details || '尚无新版复习事件'}</div>
+    <div class="tiny mb12">Google Sheets 已建立匹配：${matched} 题。只保存在网站里的题目不会显示为异常。</div>
     <button class="btn small ${waiting ? '' : 'secondary'}" onclick="syncPendingReviewEvents()"
-      ${learningOsSyncBusy || !waiting ? 'disabled' : ''}>${learningOsSyncBusy ? '同步中…' : '重试待同步记录'}</button>
+      ${learningOsSyncBusy || !waiting ? 'disabled' : ''}>${learningOsSyncBusy ? '检查中…' : '重新检查表格匹配'}</button>
   </div>`;
 }
 
