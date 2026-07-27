@@ -2169,8 +2169,8 @@ window.pushCloudData = pushCloudData;
 
 // ---------- AI Learning OS（Google Sheets 单向同步） ----------
 // 浏览器只调用已登录用户可访问的 Supabase Edge Function。
-// Google 服务账号凭据只存在于 Edge Function secrets，绝不进入本文件或仓库。
-const LEARNING_OS_FUNCTION = 'learning-os-sync';
+// Apps Script 地址和同步密钥只存在于 Edge Function secrets，绝不进入本文件或仓库。
+const LEARNING_OS_FUNCTION = 'learning-os-sheet-sync-v6';
 const LEARNING_OS_RETRYABLE = new Set(['pending', 'unmatched', 'ambiguous', 'error']);
 let learningOsSyncTimer = null;
 let learningOsSyncBusy = false;
