@@ -557,7 +557,7 @@ button:focus-visible, .nav-btn:focus-visible, .subject-pick button:focus-visible
 <script>
 'use strict';
 // 应用版本号：每次发布更新（数据页底部可见，便于确认设备上跑的是哪一版）
-const APP_VERSION = '2026-07-15.1';
+const APP_VERSION = '2026-07-27.1';
 /* ============================================================
  * EJU 间隔复习 — 单文件应用
  * 数据: localStorage（eju.items.v2）；旧版 eju.items.v1 自动迁移且保留不动
@@ -654,8 +654,9 @@ function saveItems(items) {
 }
 
 // ---------- 数据结构 / 迁移 ----------
-// v2 题目: { id, board:'mondai'|'kakomon', subject, source, note, addedDate, intervalIndex,
-//            dueDate, history:[{date, rating}], status:'learning'|'graduated', updatedAt, legacy? }
+// v4 题目: { id, board:'mondai'|'kakomon', subject, source, note, addedDate, intervalIndex,
+//            dueDate, history:[{id,date,rating,createdAt,learningOsSync?}],
+//            status:'learning'|'graduated', updatedAt, legacy? }
 
 // 缺字段时补默认值（已有题目默认 intervalIndex=0、status=learning、dueDate=明天）
 function normalizeItem(item) {
@@ -668,7 +669,17 @@ function normalizeItem(item) {
   const history = Array.isArray(item.history)
     ? item.history
         .filter(h => h && isValidDateStr(h.date) && RATINGS.includes(h.rating))
-        .map(h => ({ date: h.date, rating: h.rating }))
+        .map(h => {
+          const out = { date: h.date, rating: h.rating };
+          if (h.id) out.id = String(h.id);
+          if (typeof h.createdAt === 'string') out.createdAt = h.createdAt;
+          if (['pending', 'syncing', 'synced', 'unmatched', 'ambiguous', 'error'].includes(h.learningOsSync)) {
+            out.learningOsSync = h.learningOsSync === 'syncing' ? 'pending' : h.learningOsSync;
+          }
+          if (typeof h.learningOsSyncedAt === 'string') out.learningOsSyncedAt = h.learningOsSyncedAt;
+          if (typeof h.learningOsMessage === 'string') out.learningOsMessage = h.learningOsMessage;
+          return out;
+        })
     : [];
   // 早期迁移的题目 board 可能还留在 legacy 里，提升到顶层
   const board = item.board === 'kakomon' || (!item.board && item.legacy?.board === 'kakomon')
@@ -790,7 +801,7 @@ function recomputeItem(item) {
     dueDate: item.dueDate,
     history: [],
   };
-  for (const h of sorted) applyRating(sim, h.rating, h.date);
+  for (const h of sorted) applyRating(sim, h.rating, h.date, false);
   item.history = sorted;
   item.intervalIndex = sim.intervalIndex;
   item.status = sim.status;
@@ -901,9 +912,19 @@ function seedPresetBooks() {
 // ---------- 核心调度逻辑 ----------
 // ○: intervalIndex+1（最后一档→毕业）；△: 档位不变；×: 归零、明天再来
 // 毕业题: 每 30 天抽查；抽查 × → 降回 learning 的 7 天档
-function applyRating(item, rating, today) {
+function applyRating(item, rating, today, recordHistory = true) {
   const seq = seqFor(item.subject);
-  item.history.push({ date: today, rating });
+  let reviewEvent = null;
+  if (recordHistory) {
+    reviewEvent = {
+      id: uid(),
+      date: today,
+      rating,
+      createdAt: new Date().toISOString(),
+      learningOsSync: 'pending',
+    };
+    item.history.push(reviewEvent);
+  }
   if (item.status === 'graduated') {
     if (rating === '×') {
       item.status = 'learning';
@@ -928,7 +949,7 @@ function applyRating(item, rating, today) {
     item.dueDate = addDaysStr(today, 1);
   }
   item.updatedAt = new Date().toISOString();
-  return item;
+  return reviewEvent || item;
 }
 
 function createItem(subject, source, note, today, board = 'mondai') {
@@ -1220,8 +1241,9 @@ function rateItem(id, rating, evt) {
   if (!item) return;
   const before = JSON.parse(JSON.stringify(item));
   const today = todayStr();
-  applyRating(item, rating, today);
+  const reviewEvent = applyRating(item, rating, today);
   saveItems(state.items); // 数据先落盘，动画只是表现层
+  queueLearningOsSync(item.id, reviewEvent.id);
   const seq = seqFor(item.subject);
   let msg;
   if (item.status === 'graduated' && before.status === 'learning') msg = `🎓 已毕业！30 天后抽查`;
@@ -1362,8 +1384,9 @@ function sessionRate(rating) {
   const item = sessionCurrentItem();
   if (!item) { renderSessionSummary(); return; }
   const before = JSON.parse(JSON.stringify(item));
-  applyRating(item, rating, todayStr());
+  const reviewEvent = applyRating(item, rating, todayStr());
   saveItems(state.items); // 与列表评级同一数据路径，先落盘
+  queueLearningOsSync(item.id, reviewEvent.id);
   const total = session.queue.length;
   const ratedBefore = session.counts['○'] + session.counts['△'] + session.counts['×'];
   session.counts[rating]++;
@@ -1858,6 +1881,7 @@ function renderData() {
     ${migrated ? `<div class="tiny mt12">已从旧版数据自动迁移（${migrated.slice(0, 10)}）。旧数据仍保留在本机 localStorage 的 eju.items.v1 中，未做改动。</div>` : ''}
   </div>`;
   html += renderSyncCard();
+  html += renderLearningOsSyncCard();
   html += `<div class="card danger-card">
     <div class="section-title" style="margin-top:0;color:var(--bad)">危险操作</div>
     <button class="btn block danger" onclick="clearAllData()">删除全部数据</button>
@@ -1869,7 +1893,7 @@ function renderData() {
 function exportData() {
   const data = {
     app: 'eju-review',
-    version: 3,
+    version: 4,
     exportedAt: new Date().toISOString(),
     items: state.items,
     books: state.books,
@@ -1965,18 +1989,23 @@ function getSupabase() {
   return supabaseClient;
 }
 
-// 合并两份复习记录：按 日期+评级 去重，再按时间排序。并集永不丢记录。
+// 合并两份复习记录：新记录按事件 ID 去重；旧记录仍按 日期+评级 去重。
+// 因此同一天同一题出现两次相同评级时，新版也不会误删其中一次。
 function mergeHistories(a, b) {
   const seen = new Set();
   const out = [];
   for (const h of [...(Array.isArray(a) ? a : []), ...(Array.isArray(b) ? b : [])]) {
     if (!h || !h.date || !h.rating) continue;
-    const k = h.date + '|' + h.rating;
+    const k = h.id ? `id:${h.id}` : `legacy:${h.date}|${h.rating}`;
     if (seen.has(k)) continue;
     seen.add(k);
-    out.push({ date: h.date, rating: h.rating });
+    out.push({ ...h });
   }
-  out.sort((x, y) => x.date < y.date ? -1 : x.date > y.date ? 1 : 0);
+  out.sort((x, y) => {
+    const aTime = x.createdAt || x.date;
+    const bTime = y.createdAt || y.date;
+    return aTime < bTime ? -1 : aTime > bTime ? 1 : 0;
+  });
   return out;
 }
 // 同一道题（同 id）跨设备合并：取复习记录并集后重算档位，让进度更靠前的一方胜出，
@@ -2015,7 +2044,7 @@ function applyMergedCloudData(remoteData) {
   suppressCloudSync = false;
 }
 function cloudDataPayload() {
-  return { version: 3, savedAt: new Date().toISOString(), items: state.items, books: state.books };
+  return { version: 4, savedAt: new Date().toISOString(), items: state.items, books: state.books };
 }
 function setSyncStatus(msg, busy = false) {
   state.sync.status = msg;
@@ -2115,6 +2144,8 @@ async function pullCloudData(silent = false) {
   }
   setSyncStatus('已同步');
   render();
+  // 页面关闭前未发出的事件会在下次登录后继续同步。
+  syncPendingReviewEvents(true);
 }
 async function pushCloudData(silent = false) {
   const sb = getSupabase();
@@ -2135,6 +2166,126 @@ window.cloudSignIn = cloudSignIn;
 window.cloudSignOut = cloudSignOut;
 window.pullCloudData = pullCloudData;
 window.pushCloudData = pushCloudData;
+
+// ---------- AI Learning OS（Google Sheets 单向同步） ----------
+// 浏览器只调用已登录用户可访问的 Supabase Edge Function。
+// Apps Script 地址和同步密钥只存在于 Edge Function secrets，绝不进入本文件或仓库。
+const LEARNING_OS_FUNCTION = 'learning-os-sheet-sync-v6';
+const LEARNING_OS_RETRYABLE = new Set(['pending', 'unmatched', 'ambiguous', 'error']);
+let learningOsSyncTimer = null;
+let learningOsSyncBusy = false;
+
+function learningOsEvents() {
+  return state.items.flatMap(item => (item.history || [])
+    .filter(event => event && event.id && event.learningOsSync)
+    .map(event => ({ item, event })));
+}
+
+function learningOsCounts() {
+  const counts = { pending: 0, synced: 0, unmatched: 0, ambiguous: 0, error: 0 };
+  learningOsEvents().forEach(({ event }) => {
+    const key = event.learningOsSync === 'syncing' ? 'pending' : event.learningOsSync;
+    if (Object.prototype.hasOwnProperty.call(counts, key)) counts[key]++;
+  });
+  return counts;
+}
+
+function queueLearningOsSync(_itemId, _eventId, delay = 6500) {
+  clearTimeout(learningOsSyncTimer);
+  learningOsSyncTimer = setTimeout(() => {
+    // 撤销会恢复评分前快照，事件随之消失，批处理中自然找不到它。
+    // 批处理会把本轮快速连续评分按顺序写入，避免 attempt_number 竞争。
+    syncPendingReviewEvents(true);
+  }, delay);
+}
+
+async function syncLearningOsEvent(item, event) {
+  const sb = getSupabase();
+  if (!sb || !state.sync.user || !item || !event || !LEARNING_OS_RETRYABLE.has(event.learningOsSync)) {
+    return false;
+  }
+  event.learningOsSync = 'syncing';
+  event.learningOsMessage = '';
+  saveItems(state.items);
+  if (state.view === 'data') renderData();
+  try {
+    const { data, error } = await sb.functions.invoke(LEARNING_OS_FUNCTION, {
+      body: {
+        item: {
+          id: item.id,
+          board: item.board,
+          subject: item.subject,
+          source: item.source,
+          note: item.note,
+          addedDate: item.addedDate,
+        },
+        event: {
+          id: event.id,
+          date: event.date,
+          rating: event.rating,
+          createdAt: event.createdAt,
+        },
+      },
+    });
+    if (error) throw error;
+    const status = data?.status;
+    if (!['synced', 'unmatched', 'ambiguous'].includes(status)) {
+      throw new Error(data?.message || '同步服务返回了未知状态');
+    }
+    event.learningOsSync = status;
+    event.learningOsMessage = data?.message || '';
+    if (status === 'synced') event.learningOsSyncedAt = new Date().toISOString();
+    saveItems(state.items);
+    if (state.view === 'data') renderData();
+    return status === 'synced';
+  } catch (error) {
+    event.learningOsSync = 'error';
+    event.learningOsMessage = cloudErrorMessage(error);
+    saveItems(state.items);
+    if (state.view === 'data') renderData();
+    return false;
+  }
+}
+
+async function syncPendingReviewEvents(silent = false) {
+  if (learningOsSyncBusy) return;
+  if (!state.sync.user) {
+    if (!silent) showToast('请先登录云同步账号');
+    return;
+  }
+  learningOsSyncBusy = true;
+  if (state.view === 'data') renderData();
+  const pending = learningOsEvents().filter(({ event }) => LEARNING_OS_RETRYABLE.has(event.learningOsSync));
+  for (const { item, event } of pending) await syncLearningOsEvent(item, event);
+  learningOsSyncBusy = false;
+  if (state.view === 'data') renderData();
+  const counts = learningOsCounts();
+  if (!silent) {
+    showToast(counts.pending + counts.unmatched + counts.ambiguous + counts.error
+      ? '同步完成，仍有未匹配或失败记录'
+      : 'Learning OS 已同步');
+  }
+}
+window.syncPendingReviewEvents = syncPendingReviewEvents;
+
+function renderLearningOsSyncCard() {
+  const c = learningOsCounts();
+  const waiting = c.pending + c.unmatched + c.ambiguous + c.error;
+  const details = [
+    `已同步 ${c.synced}`,
+    c.pending ? `待处理 ${c.pending}` : '',
+    c.unmatched ? `未匹配 ${c.unmatched}` : '',
+    c.ambiguous ? `匹配冲突 ${c.ambiguous}` : '',
+    c.error ? `失败 ${c.error}` : '',
+  ].filter(Boolean).join(' · ');
+  return `<div class="card">
+    <div class="section-title" style="margin-top:0">AI Learning OS</div>
+    <div class="small mb12">匹配到 Google Sheets 原题时，复习结果会作为新作答追加；不会覆盖原记录。</div>
+    <div class="tiny mb12">${details || '尚无新版复习事件'}</div>
+    <button class="btn small ${waiting ? '' : 'secondary'}" onclick="syncPendingReviewEvents()"
+      ${learningOsSyncBusy || !waiting ? 'disabled' : ''}>${learningOsSyncBusy ? '同步中…' : '重试待同步记录'}</button>
+  </div>`;
+}
 
 function renderSyncCard() {
   if (!state.sync.available) {
