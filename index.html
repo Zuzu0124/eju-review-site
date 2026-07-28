@@ -124,7 +124,12 @@ body::before {
 }
 ::selection { background: rgba(234, 88, 12, .2); }
 
-.app { max-width: 620px; margin: 0 auto; padding: 0 16px calc(92px + env(safe-area-inset-bottom)); min-width: 0; }
+.app {
+  max-width: 620px;
+  margin: 0 auto;
+  padding: env(safe-area-inset-top) 16px calc(92px + env(safe-area-inset-bottom));
+  min-width: 0;
+}
 
 /* ---------- 全局品牌行（瘦） ---------- */
 .header { padding: 16px 2px 4px; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; }
