@@ -658,6 +658,10 @@ function saveItems(items) {
 //            dueDate, history:[{id,date,rating,createdAt,learningOsSync?}],
 //            status:'learning'|'graduated', updatedAt, legacy? }
 
+// 同步功能上线当天仍打开旧页面时，真实完成的复习只有 date/rating，
+// 没有事件 ID。仅恢复上线日及之后的这类记录，避免回填更早的历史数据。
+const LEARNING_OS_RECOVERY_START_DATE = '2026-07-28';
+
 // 缺字段时补默认值（已有题目默认 intervalIndex=0、status=learning、dueDate=明天）
 function normalizeItem(item) {
   if (!item || typeof item !== 'object' || !item.id) return null;
@@ -669,12 +673,18 @@ function normalizeItem(item) {
   const history = Array.isArray(item.history)
     ? item.history
         .filter(h => h && isValidDateStr(h.date) && RATINGS.includes(h.rating))
-        .map(h => {
+        .map((h, index) => {
           const out = { date: h.date, rating: h.rating };
           if (h.id) out.id = String(h.id);
+          const recoverForLearningOs = h.date >= LEARNING_OS_RECOVERY_START_DATE && !h.learningOsSync;
+          if (!out.id && recoverForLearningOs) {
+            out.id = `recovered:${item.id}:${h.date}:${index}:${h.rating}`;
+          }
           if (typeof h.createdAt === 'string') out.createdAt = h.createdAt;
           if (['pending', 'syncing', 'synced', 'unmatched', 'ambiguous', 'error'].includes(h.learningOsSync)) {
             out.learningOsSync = h.learningOsSync === 'syncing' ? 'pending' : h.learningOsSync;
+          } else if (recoverForLearningOs) {
+            out.learningOsSync = 'pending';
           }
           if (typeof h.learningOsSyncedAt === 'string') out.learningOsSyncedAt = h.learningOsSyncedAt;
           if (typeof h.learningOsMessage === 'string') out.learningOsMessage = h.learningOsMessage;
