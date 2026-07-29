@@ -21,7 +21,7 @@
 /* ============ 设计令牌：暖石墨工作台 ============ */
 :root {
   color-scheme: light dark;
-  --nav-viewport-bottom: 0px;
+  --standalone-app-height: 100lvh;
   --bg: #f6f5f2;
   --card: #ffffff;
   --surface-2: #efede8;
@@ -152,10 +152,35 @@ body::before {
 
 /* ---------- 底部导航 ---------- */
 .nav-bar {
-  position: fixed; bottom: var(--nav-viewport-bottom); left: 0; right: 0; z-index: 50;
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
   display: grid; grid-template-columns: repeat(5, 1fr);
   background: var(--glass); backdrop-filter: saturate(180%) blur(16px); -webkit-backdrop-filter: saturate(180%) blur(16px);
   border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom);
+}
+/*
+ * iOS 主屏幕 Web App 使用固定尺寸的应用外壳，只有 .app 内部滚动。
+ * 底栏改为外壳内的 absolute 元素，不再交给 WebKit 的 visualViewport
+ * fixed 定位系统，避免软键盘和滚动后上下漂移或被裁剪。
+ */
+html.standalone-shell,
+html.standalone-shell body {
+  width: 100%;
+  height: var(--standalone-app-height);
+  overflow: hidden;
+}
+html.standalone-shell body { position: relative; }
+html.standalone-shell body::before { position: absolute; }
+html.standalone-shell .app {
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+html.standalone-shell .nav-bar,
+html.standalone-shell .toast-wrap,
+html.standalone-shell .session {
+  position: absolute;
 }
 .nav-btn {
   appearance: none; border: 0; background: none; cursor: pointer;
@@ -563,7 +588,7 @@ button:focus-visible, .nav-btn:focus-visible, .subject-pick button:focus-visible
 <script>
 'use strict';
 // 应用版本号：每次发布更新（数据页底部可见，便于确认设备上跑的是哪一版）
-const APP_VERSION = '2026-07-29.2';
+const APP_VERSION = '2026-07-29.3';
 /* ============================================================
  * EJU 间隔复习 — 单文件应用
  * 数据: localStorage（eju.items.v2）；旧版 eju.items.v1 自动迁移且保留不动
@@ -1064,19 +1089,25 @@ function render() {
     case 'stats': renderStats(); break;
     case 'data': renderData(); break;
   }
-  scheduleNavViewportRecovery();
 }
 const VIEW_ORDER = ['review', 'entry', 'library', 'stats', 'data'];
+function scrollCurrentViewToTop(behavior = 'auto') {
+  const scroller = document.documentElement.classList.contains('standalone-shell')
+    ? $('.app')
+    : window;
+  try { scroller?.scrollTo({ top: 0, behavior }); } catch (e) {}
+}
 function navigate(view) {
   const from = state.view;
   // 点击当前已激活的标签：不重放入场动画，滚回顶部即可
   if (view === from) {
     render();
-    try { window.scrollTo({ top: 0, behavior: prefersReducedMotion() ? 'auto' : 'smooth' }); } catch (e) {}
+    scrollCurrentViewToTop(prefersReducedMotion() ? 'auto' : 'smooth');
     return;
   }
   state.view = view;
   render();
+  scrollCurrentViewToTop();
   // 方向感知：按标签顺序决定滑入方向
   const a = VIEW_ORDER.indexOf(from), b = VIEW_ORDER.indexOf(view);
   afterViewRender(a >= 0 && b >= 0 ? (b > a ? 'l' : 'r') : null);
@@ -2361,89 +2392,45 @@ function showToast(msg, undoFn) {
   }, undoFn ? 5000 : 2400);
 }
 
-// ---------- iOS 独立 Web App 可视视口恢复 ----------
-// iOS 26 WebKit 偶尔会在软键盘关闭后保留一个过短的 visualViewport。
-// position: fixed 的底栏会因此停在错误的“视口底部”，下方留下空白。
-// 这里只补偿独立 Web App 中、键盘已关闭后的中等残留间隙；
-// 真正的键盘高度会超过阈值，输入期间也始终不做补偿。
-const NAV_VIEWPORT_STALE_GAP_MAX = 140;
-let navViewportRecoveryTimers = [];
-let navViewportLargestBottom = 0;
-
+// ---------- iOS 独立 Web App 外壳 ----------
 function isStandaloneWebApp() {
   return window.matchMedia?.('(display-mode: standalone)').matches
     || window.navigator.standalone === true;
 }
 
-function isEditableElement(element) {
-  return !!element?.matches?.('input, textarea, select, [contenteditable="true"]');
+function standaloneScreenHeight() {
+  const width = window.screen?.width || window.innerWidth;
+  const height = window.screen?.height || window.innerHeight;
+  return window.matchMedia?.('(orientation: portrait)').matches
+    ? Math.max(width, height)
+    : Math.min(width, height);
 }
 
-function navViewportRecoveryOffset({
-  standalone,
-  editing,
-  expectedHeight,
-  viewportHeight,
-  viewportOffsetTop,
-  viewportScale,
-}) {
-  if (!standalone || editing || viewportScale !== 1) return 0;
-  const gap = expectedHeight - viewportHeight - viewportOffsetTop;
-  return gap > 1 && gap <= NAV_VIEWPORT_STALE_GAP_MAX ? gap : 0;
-}
-
-function updateNavViewportRecovery() {
-  const viewport = window.visualViewport;
-  if (!viewport) return;
-  const editing = isEditableElement(document.activeElement);
-  const viewportBottom = viewport.height + viewport.offsetTop;
-  if (!editing && viewport.scale === 1) {
-    navViewportLargestBottom = Math.max(navViewportLargestBottom, viewportBottom);
-  }
-  // iOS 26 的故障有时会同时缩短 innerHeight 和 visualViewport，
-  // 因此还要参考独立 Web App 的屏幕高度和本次运行中见过的最大视口底边。
-  const expectedHeight = Math.max(
-    window.innerHeight,
-    document.documentElement.clientHeight,
-    window.screen?.height || 0,
-    navViewportLargestBottom
-  );
-  const offset = navViewportRecoveryOffset({
-    standalone: isStandaloneWebApp(),
-    editing,
-    expectedHeight,
-    viewportHeight: viewport.height,
-    viewportOffsetTop: viewport.offsetTop,
-    viewportScale: viewport.scale,
-  });
-  // 改 bottom 会让 WebKit 重新布局整个 fixed 元素；不要使用 transform，
-  // 否则移动到旧 visualViewport 之外的文字和安全区会被合成层裁掉。
-  document.documentElement.style.setProperty('--nav-viewport-bottom', `${-offset}px`);
-}
-
-function scheduleNavViewportRecovery() {
-  navViewportRecoveryTimers.forEach(clearTimeout);
-  navViewportRecoveryTimers = [0, 120, 320, 700].map(delay =>
-    setTimeout(updateNavViewportRecovery, delay)
+function updateStandaloneShellHeight() {
+  document.documentElement.style.setProperty(
+    '--standalone-app-height',
+    `${standaloneScreenHeight()}px`
   );
 }
 
-function initNavViewportRecovery() {
-  if (!window.visualViewport) return;
-  window.visualViewport.addEventListener('resize', scheduleNavViewportRecovery);
-  window.visualViewport.addEventListener('scroll', scheduleNavViewportRecovery);
-  window.addEventListener('pageshow', scheduleNavViewportRecovery);
-  window.addEventListener('orientationchange', scheduleNavViewportRecovery);
-  document.addEventListener('visibilitychange', () => {
-    if (!document.hidden) scheduleNavViewportRecovery();
-  });
-  document.addEventListener('focusin', updateNavViewportRecovery);
-  document.addEventListener('focusout', scheduleNavViewportRecovery);
-  scheduleNavViewportRecovery();
+function initStandaloneShell() {
+  if (!isStandaloneWebApp()) return;
+  document.documentElement.classList.add('standalone-shell');
+  updateStandaloneShellHeight();
+  let timers = [];
+  const schedule = () => {
+    timers.forEach(clearTimeout);
+    timers = [0, 150, 500].map(delay =>
+      setTimeout(updateStandaloneShellHeight, delay)
+    );
+  };
+  window.addEventListener('orientationchange', schedule);
+  window.addEventListener('pageshow', schedule);
 }
 
 // ---------- 初始化 ----------
 function init() {
+  initStandaloneShell();
   state.items = fixMathSubjectNameOnce(fixEssenceMidoriOnce(loadAndMigrateItems()));
   state.books = loadBooks();
   suppressCloudSync = true;
@@ -2453,7 +2440,6 @@ function init() {
   $$('.nav-btn').forEach(btn => btn.addEventListener('click', () => navigate(btn.dataset.view)));
   $('#import-file').addEventListener('change', onImportFile);
   $('#today-date').textContent = displayDate(todayStr());
-  initNavViewportRecovery();
   // 跨日自动刷新（页面长开时）
   let shownDay = todayStr();
   setInterval(() => {
