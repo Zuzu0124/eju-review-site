@@ -21,7 +21,7 @@
 /* ============ 设计令牌：暖石墨工作台 ============ */
 :root {
   color-scheme: light dark;
-  --nav-viewport-recovery: 0px;
+  --nav-viewport-bottom: 0px;
   --bg: #f6f5f2;
   --card: #ffffff;
   --surface-2: #efede8;
@@ -152,8 +152,7 @@ body::before {
 
 /* ---------- 底部导航 ---------- */
 .nav-bar {
-  position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
-  transform: translateY(var(--nav-viewport-recovery));
+  position: fixed; bottom: var(--nav-viewport-bottom); left: 0; right: 0; z-index: 50;
   display: grid; grid-template-columns: repeat(5, 1fr);
   background: var(--glass); backdrop-filter: saturate(180%) blur(16px); -webkit-backdrop-filter: saturate(180%) blur(16px);
   border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom);
@@ -564,7 +563,7 @@ button:focus-visible, .nav-btn:focus-visible, .subject-pick button:focus-visible
 <script>
 'use strict';
 // 应用版本号：每次发布更新（数据页底部可见，便于确认设备上跑的是哪一版）
-const APP_VERSION = '2026-07-29.1';
+const APP_VERSION = '2026-07-29.2';
 /* ============================================================
  * EJU 间隔复习 — 单文件应用
  * 数据: localStorage（eju.items.v2）；旧版 eju.items.v1 自动迁移且保留不动
@@ -2417,7 +2416,9 @@ function updateNavViewportRecovery() {
     viewportOffsetTop: viewport.offsetTop,
     viewportScale: viewport.scale,
   });
-  document.documentElement.style.setProperty('--nav-viewport-recovery', `${offset}px`);
+  // 改 bottom 会让 WebKit 重新布局整个 fixed 元素；不要使用 transform，
+  // 否则移动到旧 visualViewport 之外的文字和安全区会被合成层裁掉。
+  document.documentElement.style.setProperty('--nav-viewport-bottom', `${-offset}px`);
 }
 
 function scheduleNavViewportRecovery() {
