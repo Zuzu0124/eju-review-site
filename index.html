@@ -156,9 +156,6 @@ body::before {
   background: var(--glass); backdrop-filter: saturate(180%) blur(16px); -webkit-backdrop-filter: saturate(180%) blur(16px);
   border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom);
 }
-/* iOS 主屏幕模式下，短内容的复习页会把 fixed 底栏定位在安全区上方；
-   向下延伸同样的 inset，避免与内部 padding 重复避让。其他页面保持原定位。 */
-body[data-view="review"] .nav-bar { bottom: calc(-1 * env(safe-area-inset-bottom)); }
 .nav-btn {
   appearance: none; border: 0; background: none; cursor: pointer;
   padding: 8px 0 8px; font-size: 11px; font-weight: 500; color: var(--muted); font-family: inherit;
@@ -1057,7 +1054,6 @@ function setMain(html) {
   m.innerHTML = html;
 }
 function render() {
-  document.body.dataset.view = state.view;
   updateBadge();
   $$('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === state.view));
   switch (state.view) {
