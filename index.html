@@ -21,6 +21,7 @@
 /* ============ 设计令牌：暖石墨工作台 ============ */
 :root {
   color-scheme: light dark;
+  --nav-viewport-recovery: 0px;
   --bg: #f6f5f2;
   --card: #ffffff;
   --surface-2: #efede8;
@@ -152,6 +153,7 @@ body::before {
 /* ---------- 底部导航 ---------- */
 .nav-bar {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+  transform: translateY(var(--nav-viewport-recovery));
   display: grid; grid-template-columns: repeat(5, 1fr);
   background: var(--glass); backdrop-filter: saturate(180%) blur(16px); -webkit-backdrop-filter: saturate(180%) blur(16px);
   border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom);
@@ -562,7 +564,7 @@ button:focus-visible, .nav-btn:focus-visible, .subject-pick button:focus-visible
 <script>
 'use strict';
 // 应用版本号：每次发布更新（数据页底部可见，便于确认设备上跑的是哪一版）
-const APP_VERSION = '2026-07-27.1';
+const APP_VERSION = '2026-07-29.1';
 /* ============================================================
  * EJU 间隔复习 — 单文件应用
  * 数据: localStorage（eju.items.v2）；旧版 eju.items.v1 自动迁移且保留不动
@@ -1063,6 +1065,7 @@ function render() {
     case 'stats': renderStats(); break;
     case 'data': renderData(); break;
   }
+  scheduleNavViewportRecovery();
 }
 const VIEW_ORDER = ['review', 'entry', 'library', 'stats', 'data'];
 function navigate(view) {
@@ -2359,6 +2362,85 @@ function showToast(msg, undoFn) {
   }, undoFn ? 5000 : 2400);
 }
 
+// ---------- iOS 独立 Web App 可视视口恢复 ----------
+// iOS 26 WebKit 偶尔会在软键盘关闭后保留一个过短的 visualViewport。
+// position: fixed 的底栏会因此停在错误的“视口底部”，下方留下空白。
+// 这里只补偿独立 Web App 中、键盘已关闭后的中等残留间隙；
+// 真正的键盘高度会超过阈值，输入期间也始终不做补偿。
+const NAV_VIEWPORT_STALE_GAP_MAX = 140;
+let navViewportRecoveryTimers = [];
+let navViewportLargestBottom = 0;
+
+function isStandaloneWebApp() {
+  return window.matchMedia?.('(display-mode: standalone)').matches
+    || window.navigator.standalone === true;
+}
+
+function isEditableElement(element) {
+  return !!element?.matches?.('input, textarea, select, [contenteditable="true"]');
+}
+
+function navViewportRecoveryOffset({
+  standalone,
+  editing,
+  expectedHeight,
+  viewportHeight,
+  viewportOffsetTop,
+  viewportScale,
+}) {
+  if (!standalone || editing || viewportScale !== 1) return 0;
+  const gap = expectedHeight - viewportHeight - viewportOffsetTop;
+  return gap > 1 && gap <= NAV_VIEWPORT_STALE_GAP_MAX ? gap : 0;
+}
+
+function updateNavViewportRecovery() {
+  const viewport = window.visualViewport;
+  if (!viewport) return;
+  const editing = isEditableElement(document.activeElement);
+  const viewportBottom = viewport.height + viewport.offsetTop;
+  if (!editing && viewport.scale === 1) {
+    navViewportLargestBottom = Math.max(navViewportLargestBottom, viewportBottom);
+  }
+  // iOS 26 的故障有时会同时缩短 innerHeight 和 visualViewport，
+  // 因此还要参考独立 Web App 的屏幕高度和本次运行中见过的最大视口底边。
+  const expectedHeight = Math.max(
+    window.innerHeight,
+    document.documentElement.clientHeight,
+    window.screen?.height || 0,
+    navViewportLargestBottom
+  );
+  const offset = navViewportRecoveryOffset({
+    standalone: isStandaloneWebApp(),
+    editing,
+    expectedHeight,
+    viewportHeight: viewport.height,
+    viewportOffsetTop: viewport.offsetTop,
+    viewportScale: viewport.scale,
+  });
+  document.documentElement.style.setProperty('--nav-viewport-recovery', `${offset}px`);
+}
+
+function scheduleNavViewportRecovery() {
+  navViewportRecoveryTimers.forEach(clearTimeout);
+  navViewportRecoveryTimers = [0, 120, 320, 700].map(delay =>
+    setTimeout(updateNavViewportRecovery, delay)
+  );
+}
+
+function initNavViewportRecovery() {
+  if (!window.visualViewport) return;
+  window.visualViewport.addEventListener('resize', scheduleNavViewportRecovery);
+  window.visualViewport.addEventListener('scroll', scheduleNavViewportRecovery);
+  window.addEventListener('pageshow', scheduleNavViewportRecovery);
+  window.addEventListener('orientationchange', scheduleNavViewportRecovery);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) scheduleNavViewportRecovery();
+  });
+  document.addEventListener('focusin', updateNavViewportRecovery);
+  document.addEventListener('focusout', scheduleNavViewportRecovery);
+  scheduleNavViewportRecovery();
+}
+
 // ---------- 初始化 ----------
 function init() {
   state.items = fixMathSubjectNameOnce(fixEssenceMidoriOnce(loadAndMigrateItems()));
@@ -2370,6 +2452,7 @@ function init() {
   $$('.nav-btn').forEach(btn => btn.addEventListener('click', () => navigate(btn.dataset.view)));
   $('#import-file').addEventListener('change', onImportFile);
   $('#today-date').textContent = displayDate(todayStr());
+  initNavViewportRecovery();
   // 跨日自动刷新（页面长开时）
   let shownDay = todayStr();
   setInterval(() => {
