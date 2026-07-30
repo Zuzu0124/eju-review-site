@@ -588,7 +588,7 @@ button:focus-visible, .nav-btn:focus-visible, .subject-pick button:focus-visible
 <script>
 'use strict';
 // 应用版本号：每次发布更新（数据页底部可见，便于确认设备上跑的是哪一版）
-const APP_VERSION = '2026-07-30.1';
+const APP_VERSION = '2026-07-30.2';
 /* ============================================================
  * EJU 间隔复习 — 单文件应用
  * 数据: localStorage（eju.items.v2）；旧版 eju.items.v1 自动迁移且保留不动
@@ -2230,6 +2230,8 @@ let learningOsSyncTimer = null;
 let learningOsSyncDueAt = 0;
 let learningOsRetryTimer = null;
 let learningOsSyncBusy = false;
+let learningOsSyncStartedAt = 0;
+let learningOsSyncRunId = 0;
 
 function learningOsEvents() {
   return state.items.flatMap(item => (item.history || [])
@@ -2385,12 +2387,18 @@ async function syncLearningOsEvent(item, event) {
 }
 
 async function syncPendingReviewEvents(silent = false, includeMatchRetries = true) {
-  if (learningOsSyncBusy) return;
+  const startedNow = Date.now();
+  if (learningOsSyncBusy && startedNow - learningOsSyncStartedAt < LEARNING_OS_STUCK_AFTER_MS) return;
+  // iOS 可能冻结一个永不返回的旧请求；超过阈值后启动新一轮。
+  // review_event_id 让迟到的旧请求与新请求仍保持幂等。
+  if (learningOsSyncBusy) learningOsSyncBusy = false;
   if (!state.sync.user) {
     if (!silent) showToast('请先登录云同步账号');
     return;
   }
+  const runId = ++learningOsSyncRunId;
   learningOsSyncBusy = true;
+  learningOsSyncStartedAt = startedNow;
   clearTimeout(learningOsRetryTimer);
   learningOsRetryTimer = null;
   resetStuckLearningOsEvents();
@@ -2403,7 +2411,10 @@ async function syncPendingReviewEvents(silent = false, includeMatchRetries = tru
         (includeMatchRetries && LEARNING_OS_RETRYABLE.has(event.learningOsSync))));
     for (const { item, event } of pending) await syncLearningOsEvent(item, event);
   } finally {
-    learningOsSyncBusy = false;
+    if (runId === learningOsSyncRunId) {
+      learningOsSyncBusy = false;
+      learningOsSyncStartedAt = 0;
+    }
   }
   if (state.view === 'data') renderData();
   const counts = learningOsCounts();
