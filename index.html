@@ -588,7 +588,7 @@ button:focus-visible, .nav-btn:focus-visible, .subject-pick button:focus-visible
 <script>
 'use strict';
 // 应用版本号：每次发布更新（数据页底部可见，便于确认设备上跑的是哪一版）
-const APP_VERSION = '2026-07-30.3';
+const APP_VERSION = '2026-07-30.4';
 /* ============================================================
  * EJU 间隔复习 — 单文件应用
  * 数据: localStorage（eju.items.v2）；旧版 eju.items.v1 自动迁移且保留不动
@@ -2223,9 +2223,11 @@ const LEARNING_OS_FUNCTION = 'learning-os-sheet-sync-v6';
 const LEARNING_OS_RETRYABLE = new Set(['pending', 'unmatched', 'ambiguous', 'error']);
 const LEARNING_OS_AUTOMATIC = new Set(['pending', 'error']);
 const LEARNING_OS_UNDO_DELAY_MS = 5200;
-const LEARNING_OS_REQUEST_TIMEOUT_MS = 20000;
+const LEARNING_OS_REQUEST_TIMEOUT_MS = 15000;
 const LEARNING_OS_RETRY_DELAY_MS = 15000;
-const LEARNING_OS_STUCK_AFTER_MS = 30000;
+const LEARNING_OS_STUCK_AFTER_MS = 70000;
+const LEARNING_OS_EVENT_GAP_MS = 700;
+const LEARNING_OS_TRANSPORT_RETRY_DELAYS_MS = [0, 1200, 4000];
 let learningOsSyncTimer = null;
 let learningOsSyncDueAt = 0;
 let learningOsRetryTimer = null;
@@ -2327,15 +2329,69 @@ async function learningOsErrorMessage(error) {
   }
 }
 
-function withLearningOsTimeout(promise) {
-  let timer;
-  const timeout = new Promise((_, reject) => {
-    timer = setTimeout(
-      () => reject(new Error('同步请求超时，已保留记录并等待自动重试')),
-      LEARNING_OS_REQUEST_TIMEOUT_MS
+function learningOsDelay(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function fetchLearningOsOnce(payload, accessToken) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), LEARNING_OS_REQUEST_TIMEOUT_MS);
+  let response;
+  try {
+    response = await fetch(
+      `${SUPABASE_URL}/functions/v1/${encodeURIComponent(LEARNING_OS_FUNCTION)}`,
+      {
+        method: 'POST',
+        mode: 'cors',
+        credentials: 'omit',
+        cache: 'no-store',
+        signal: controller.signal,
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: SUPABASE_KEY,
+          Authorization: `Bearer ${accessToken}`,
+          'x-client-info': `eju-review-site/${APP_VERSION}`,
+        },
+        body: JSON.stringify(payload),
+      }
     );
-  });
-  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+  } catch (error) {
+    const detail = error?.name === 'AbortError'
+      ? `请求超过 ${Math.round(LEARNING_OS_REQUEST_TIMEOUT_MS / 1000)} 秒`
+      : (error?.message || String(error));
+    const wrapped = new Error(`无法连接同步服务：${detail}`);
+    wrapped.cause = error;
+    wrapped.learningOsTransport = true;
+    throw wrapped;
+  } finally {
+    clearTimeout(timeout);
+  }
+
+  let text = '';
+  try {
+    text = await response.text();
+  } catch (error) {
+    const detail = error?.message || String(error);
+    const wrapped = new Error(`同步响应读取失败：${detail}`);
+    wrapped.cause = error;
+    wrapped.learningOsTransport = true;
+    throw wrapped;
+  }
+  let data = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch (_error) {
+      data = { message: text };
+    }
+  }
+  if (!response.ok) {
+    const error = new Error(`同步服务返回 HTTP ${response.status}`);
+    error.learningOsDetails = data?.message || data?.error || error.message;
+    error.learningOsTransport = [408, 425, 429, 500, 502, 503, 504].includes(response.status);
+    throw error;
+  }
+  return data;
 }
 
 async function invokeLearningOsFunction(payload) {
@@ -2350,46 +2406,33 @@ async function invokeLearningOsFunction(payload) {
   const accessToken = sessionData?.session?.access_token;
   if (!accessToken) throw new Error('登录状态已失效，请重新登录云同步账号');
 
-  let response;
-  try {
-    response = await fetch(
-      `${SUPABASE_URL}/functions/v1/${encodeURIComponent(LEARNING_OS_FUNCTION)}`,
-      {
-        method: 'POST',
-        mode: 'cors',
-        credentials: 'omit',
-        cache: 'no-store',
-        headers: {
-          'Content-Type': 'application/json',
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${accessToken}`,
-          'x-client-info': `eju-review-site/${APP_VERSION}`,
-        },
-        body: JSON.stringify(payload),
-      }
-    );
-  } catch (error) {
-    const detail = error?.message || String(error);
-    const wrapped = new Error(`无法连接同步服务：${detail}`);
-    wrapped.cause = error;
-    throw wrapped;
-  }
-
-  const text = await response.text();
-  let data = null;
-  if (text) {
+  let lastError = null;
+  for (let attempt = 0; attempt < LEARNING_OS_TRANSPORT_RETRY_DELAYS_MS.length; attempt++) {
+    if (document.hidden) {
+      const error = new Error('页面已进入后台，回到前台后会自动继续同步');
+      error.learningOsTransport = true;
+      throw error;
+    }
+    if (navigator.onLine === false) {
+      const error = new Error('当前处于离线状态，联网后会自动继续同步');
+      error.learningOsTransport = true;
+      throw error;
+    }
+    const delay = LEARNING_OS_TRANSPORT_RETRY_DELAYS_MS[attempt];
+    if (delay) await learningOsDelay(delay);
     try {
-      data = JSON.parse(text);
-    } catch (_error) {
-      data = { message: text };
+      return await fetchLearningOsOnce(payload, accessToken);
+    } catch (error) {
+      lastError = error;
+      if (!error?.learningOsTransport) throw error;
     }
   }
-  if (!response.ok) {
-    const error = new Error(`同步服务返回 HTTP ${response.status}`);
-    error.learningOsDetails = data?.message || data?.error || error.message;
-    throw error;
-  }
-  return data;
+
+  const detail = lastError?.learningOsDetails || lastError?.message || '未知网络错误';
+  const error = new Error(`连续 ${LEARNING_OS_TRANSPORT_RETRY_DELAYS_MS.length} 次连接失败`);
+  error.learningOsDetails = `${error.message}：${detail}`;
+  error.learningOsTransport = true;
+  throw error;
 }
 
 async function syncLearningOsEvent(item, event) {
@@ -2403,7 +2446,7 @@ async function syncLearningOsEvent(item, event) {
   saveItems(state.items);
   if (state.view === 'data') renderData();
   try {
-    const data = await withLearningOsTimeout(invokeLearningOsFunction({
+    const data = await invokeLearningOsFunction({
       item: {
         id: item.id,
         board: item.board,
@@ -2418,7 +2461,7 @@ async function syncLearningOsEvent(item, event) {
         rating: event.rating,
         createdAt: event.createdAt,
       },
-    }));
+    });
     const status = data?.status;
     if (!['synced', 'unmatched', 'ambiguous'].includes(status)) {
       throw new Error(data?.message || '同步服务返回了未知状态');
@@ -2460,8 +2503,16 @@ async function syncPendingReviewEvents(silent = false, includeMatchRetries = tru
     const pending = learningOsEvents().filter(({ event }) =>
       learningOsPastUndoWindow(event, now) &&
       (LEARNING_OS_AUTOMATIC.has(event.learningOsSync) ||
-        (includeMatchRetries && LEARNING_OS_RETRYABLE.has(event.learningOsSync))));
-    for (const { item, event } of pending) await syncLearningOsEvent(item, event);
+        (includeMatchRetries && LEARNING_OS_RETRYABLE.has(event.learningOsSync))))
+      // 先处理上一轮失败的事件；若网络仍不稳定，不继续消耗后续待发送记录。
+      .sort((a, b) => Number(b.event.learningOsSync === 'error') -
+        Number(a.event.learningOsSync === 'error'));
+    for (let index = 0; index < pending.length; index++) {
+      const { item, event } = pending[index];
+      await syncLearningOsEvent(item, event);
+      if (event.learningOsSync === 'error') break;
+      if (index < pending.length - 1) await learningOsDelay(LEARNING_OS_EVENT_GAP_MS);
+    }
   } finally {
     if (runId === learningOsSyncRunId) {
       learningOsSyncBusy = false;
@@ -2470,8 +2521,14 @@ async function syncPendingReviewEvents(silent = false, includeMatchRetries = tru
   }
   if (state.view === 'data') renderData();
   const counts = learningOsCounts();
-  scheduleNextLearningOsSync();
-  if (counts.error) scheduleLearningOsRetry();
+  if (counts.error) {
+    clearTimeout(learningOsSyncTimer);
+    learningOsSyncTimer = null;
+    learningOsSyncDueAt = 0;
+    scheduleLearningOsRetry();
+  } else {
+    scheduleNextLearningOsSync();
+  }
   if (!silent) {
     showToast(counts.error ? '匹配检查完成；部分同步请求失败，可稍后重试' : 'Learning OS 匹配检查完成');
   }
