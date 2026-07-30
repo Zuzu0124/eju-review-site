@@ -588,7 +588,7 @@ button:focus-visible, .nav-btn:focus-visible, .subject-pick button:focus-visible
 <script>
 'use strict';
 // 应用版本号：每次发布更新（数据页底部可见，便于确认设备上跑的是哪一版）
-const APP_VERSION = '2026-07-30.4';
+const APP_VERSION = '2026-07-30.5';
 /* ============================================================
  * EJU 间隔复习 — 单文件应用
  * 数据: localStorage（eju.items.v2）；旧版 eju.items.v1 自动迁移且保留不动
@@ -2226,6 +2226,7 @@ const LEARNING_OS_UNDO_DELAY_MS = 5200;
 const LEARNING_OS_REQUEST_TIMEOUT_MS = 15000;
 const LEARNING_OS_RETRY_DELAY_MS = 15000;
 const LEARNING_OS_STUCK_AFTER_MS = 70000;
+const LEARNING_OS_WATCHDOG_INTERVAL_MS = 10000;
 const LEARNING_OS_EVENT_GAP_MS = 700;
 const LEARNING_OS_TRANSPORT_RETRY_DELAYS_MS = [0, 1200, 4000];
 let learningOsSyncTimer = null;
@@ -2301,12 +2302,13 @@ function scheduleLearningOsRetry() {
   }, LEARNING_OS_RETRY_DELAY_MS);
 }
 
-function resetStuckLearningOsEvents(now = Date.now()) {
+function resetStuckLearningOsEvents(now = Date.now(), force = false) {
   let changed = false;
   learningOsEvents().forEach(({ event }) => {
     if (event.learningOsSync !== 'syncing') return;
     const attemptedAt = Date.parse(event.learningOsAttemptedAt || '');
-    if (Number.isFinite(attemptedAt) && now - attemptedAt < LEARNING_OS_STUCK_AFTER_MS) return;
+    if (!force && Number.isFinite(attemptedAt) &&
+        now - attemptedAt < LEARNING_OS_STUCK_AFTER_MS) return;
     event.learningOsSync = 'pending';
     event.learningOsMessage = '上次同步在页面挂起时中断，已自动重新排队';
     changed = true;
@@ -2491,12 +2493,14 @@ async function syncPendingReviewEvents(silent = false, includeMatchRetries = tru
     if (!silent) showToast('请先登录云同步账号');
     return;
   }
+  // 能走到这里说明当前没有仍受保护的活动批次。若 localStorage 中还留有
+  // syncing，它来自页面关闭/冻结前的孤儿请求，应立即重新排队，而不是再等超时。
+  resetStuckLearningOsEvents(startedNow, true);
   const runId = ++learningOsSyncRunId;
   learningOsSyncBusy = true;
   learningOsSyncStartedAt = startedNow;
   clearTimeout(learningOsRetryTimer);
   learningOsRetryTimer = null;
-  resetStuckLearningOsEvents();
   if (state.view === 'data') renderData();
   try {
     const now = Date.now();
@@ -2538,7 +2542,6 @@ window.syncPendingReviewEvents = syncPendingReviewEvents;
 function initLearningOsAutoRecovery() {
   const resume = () => {
     if (document.hidden) return;
-    resetStuckLearningOsEvents();
     // 回到前台时也重新检查之前未匹配的记录：用户可能刚在表格补录原题。
     syncPendingReviewEvents(true, true);
   };
@@ -2554,10 +2557,11 @@ function initLearningOsAutoRecovery() {
   });
   setInterval(() => {
     if (!document.hidden && learningOsEvents().some(({ event }) =>
+      event.learningOsSync === 'syncing' ||
       LEARNING_OS_AUTOMATIC.has(event.learningOsSync))) {
       syncPendingReviewEvents(true, false);
     }
-  }, 60000);
+  }, LEARNING_OS_WATCHDOG_INTERVAL_MS);
 }
 
 function renderLearningOsSyncCard() {
