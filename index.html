@@ -298,7 +298,8 @@ html.standalone-shell .session {
   border: 1px solid var(--line); border-radius: var(--radius);
   padding: 14px 16px 13px; margin-bottom: 12px; box-shadow: var(--shadow-md);
 }
-.summary-nums { display: flex; gap: 24px; }
+.summary-nums { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.summary-nums > div { min-width: 0; }
 .summary-nums .num { font-family: var(--font-display); font-size: 28px; font-weight: 700; line-height: 1; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 .summary-nums .lbl { font-size: 11px; color: var(--muted); margin-top: 5px; letter-spacing: .02em; }
 .progress-wrap { display: flex; align-items: center; gap: 10px; margin-top: 13px; }
@@ -588,7 +589,7 @@ button:focus-visible, .nav-btn:focus-visible, .subject-pick button:focus-visible
 <script>
 'use strict';
 // 应用版本号：每次发布更新（数据页底部可见，便于确认设备上跑的是哪一版）
-const APP_VERSION = '2026-07-30.5';
+const APP_VERSION = '2026-08-11.1';
 /* ============================================================
  * EJU 间隔复习 — 单文件应用
  * 数据: localStorage（eju.items.v2）；旧版 eju.items.v1 自动迁移且保留不动
@@ -1031,6 +1032,11 @@ function shuffle(arr) {
 function completedCountOn(items, dateStr) {
   return items.reduce((n, i) => n + i.history.filter(h => h.date === dateStr).length, 0);
 }
+function scheduledCountOn(items, dateStr) {
+  return items.filter(i =>
+    (i.status === 'learning' || i.status === 'graduated') && i.dueDate === dateStr
+  ).length;
+}
 function groupBySubject(list) {
   const map = new Map();
   for (const it of list) {
@@ -1168,11 +1174,14 @@ function stableGradOrder(gradChecks, today) {
 
 function renderReview() {
   const today = todayStr();
+  const tomorrow = addDaysStr(today, 1);
   const { overdue, dueToday, gradChecks } = getDueTasks(state.items, today);
   const gradOrdered = stableGradOrder(gradChecks, today);
   const remaining = overdue.length + dueToday.length + gradOrdered.length;
   const done = completedCountOn(state.items, today);
   const total = remaining + done;
+  // 只显示当前已明确排到明天的题；今天尚未完成的题不计入明日排期。
+  const tomorrowCount = scheduledCountOn(state.items, tomorrow);
 
   const allPending = [...overdue, ...dueToday, ...gradOrdered];
   const bySubj = groupBySubject(allPending);
@@ -1193,6 +1202,7 @@ function renderReview() {
       <div><div class="num">${total}</div><div class="lbl">今日待复习</div></div>
       <div><div class="num" style="color:var(--good)">${done}</div><div class="lbl">已完成</div></div>
       <div><div class="num" style="color:${remaining ? 'var(--accent)' : 'var(--muted)'}">${remaining}</div><div class="lbl">剩余</div></div>
+      <div><div class="num">${tomorrowCount}</div><div class="lbl">明日已排期</div></div>
     </div>
     ${total ? `<div class="progress-wrap">
       <div class="progress ${remaining === 0 ? 'done' : ''}"><i style="width:${pct}%"></i></div>
