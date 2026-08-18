@@ -150,6 +150,79 @@ body::before {
 .screen-title { font-family: var(--font-display); font-size: 23px; font-weight: 700; letter-spacing: -.02em; line-height: 1.15; }
 .screen-sub { font-size: 12.5px; color: var(--muted); margin-top: 3px; }
 
+/* ---------- EJU 实时倒计时（复习页） ---------- */
+.eju-countdown {
+  position: relative; isolation: isolate; overflow: hidden;
+  margin: 0 0 14px; padding: 16px;
+  border: 1px solid var(--accent-dim); border-radius: 16px;
+  background:
+    radial-gradient(120% 150% at 100% 0%, rgba(245, 158, 11, .18), transparent 54%),
+    linear-gradient(145deg, var(--card), var(--accent-soft));
+  box-shadow: 0 12px 28px -18px rgba(194, 65, 12, .42), var(--shadow-sm);
+}
+.eju-countdown::before {
+  content: ""; position: absolute; z-index: -1; pointer-events: none;
+  width: 138px; height: 138px; right: -70px; top: -78px; border-radius: 50%;
+  border: 25px solid rgba(245, 158, 11, .11);
+}
+.eju-countdown-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.eju-countdown-kicker {
+  display: flex; align-items: center; gap: 7px;
+  color: var(--accent); font-size: 10.5px; font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.eju-countdown-kicker::before {
+  content: ""; width: 7px; height: 7px; flex: none; border-radius: 50%;
+  background: linear-gradient(135deg, var(--brand-from), var(--brand-to));
+  box-shadow: 0 0 0 4px rgba(234, 88, 12, .1);
+}
+.eju-countdown-title {
+  margin-top: 4px; font-family: var(--font-display); font-size: 18px; font-weight: 700;
+  letter-spacing: -.025em; line-height: 1.15;
+}
+.eju-countdown-date {
+  flex: none; border: 1px solid var(--line); border-radius: 999px; padding: 5px 9px;
+  background: rgba(255, 255, 255, .58); color: var(--muted);
+  font-family: var(--font-mono); font-size: 10.5px; font-weight: 600; white-space: nowrap;
+  box-shadow: var(--shadow-sm);
+}
+.eju-countdown-grid {
+  display: grid; grid-template-columns: 1.35fr repeat(3, minmax(0, 1fr));
+  margin-top: 14px; padding: 10px 5px;
+  border: 1px solid rgba(194, 65, 12, .12); border-radius: 12px;
+  background: rgba(255, 255, 255, .56); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+}
+.eju-countdown-unit { min-width: 0; padding: 2px 8px; text-align: center; }
+.eju-countdown-unit + .eju-countdown-unit { border-left: 1px solid var(--line); }
+.eju-countdown-value {
+  display: block; color: var(--text); font-family: var(--font-mono); font-size: 24px;
+  font-weight: 700; line-height: 1.05; letter-spacing: -.055em; font-variant-numeric: tabular-nums;
+}
+.eju-countdown-unit.days .eju-countdown-value {
+  color: var(--accent); font-family: var(--font-display); font-size: 31px; letter-spacing: -.045em;
+}
+.eju-countdown-label { display: block; margin-top: 5px; color: var(--muted); font-size: 10px; font-weight: 600; }
+.eju-countdown-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  margin-top: 10px; color: var(--muted); font-size: 10.5px;
+}
+.eju-countdown-zone { display: inline-flex; align-items: center; gap: 5px; }
+.eju-countdown-zone svg { width: 12px; height: 12px; stroke-width: 1.8; }
+.eju-countdown-status { color: var(--accent); font-weight: 600; text-align: right; }
+.eju-countdown.arrived .eju-countdown-grid { border-color: var(--good-border); background: var(--good-soft); }
+.eju-countdown.arrived .eju-countdown-value,
+.eju-countdown.arrived .eju-countdown-status { color: var(--good); }
+@media (prefers-color-scheme: dark) {
+  .eju-countdown-date, .eju-countdown-grid { background: rgba(23, 21, 17, .64); }
+}
+@media (max-width: 370px) {
+  .eju-countdown { padding: 14px; }
+  .eju-countdown-value { font-size: 21px; }
+  .eju-countdown-unit.days .eju-countdown-value { font-size: 27px; }
+  .eju-countdown-unit { padding-inline: 5px; }
+  .eju-countdown-date { padding-inline: 7px; font-size: 10px; }
+}
+
 /* ---------- 底部导航 ---------- */
 .nav-bar {
   position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
@@ -589,7 +662,7 @@ button:focus-visible, .nav-btn:focus-visible, .subject-pick button:focus-visible
 <script>
 'use strict';
 // 应用版本号：每次发布更新（数据页底部可见，便于确认设备上跑的是哪一版）
-const APP_VERSION = '2026-08-11.1';
+const APP_VERSION = '2026-08-19.1';
 /* ============================================================
  * EJU 间隔复习 — 单文件应用
  * 数据: localStorage（eju.items.v2）；旧版 eju.items.v1 自动迁移且保留不动
@@ -656,6 +729,89 @@ const SEQ_MEMORY = [1, 2, 4, 7, 14, 30];    // 记忆性：化学-记忆
 const GRAD_CYCLE_DAYS = 30;                 // 毕业后抽查周期
 const GRAD_DEMOTE_DAYS = 7;                 // 抽查评 × 后降回的档位天数
 const RATINGS = ['○', '△', '×'];
+// JASSO 公布的 2026 年第二回 EJU 考试日，以及日本国内首场（日本语）的开始时间。
+// 卡片会明确标注“日本国内首场”，避免让 09:30 看起来像所有科目的统一开考时刻。
+const EJU_EXAM_TARGET = '2026-11-08T09:30:00+09:00';
+const EJU_EXAM_TARGET_MS = Date.parse(EJU_EXAM_TARGET);
+const EJU_EXAM_DAY_END_MS = Date.parse('2026-11-09T00:00:00+09:00');
+
+function getEjuCountdownParts(nowMs = Date.now()) {
+  const reached = nowMs >= EJU_EXAM_TARGET_MS;
+  const totalSeconds = Math.max(0, Math.ceil((EJU_EXAM_TARGET_MS - nowMs) / 1000));
+  return {
+    reached,
+    phase: !reached ? 'upcoming' : (nowMs < EJU_EXAM_DAY_END_MS ? 'exam-day' : 'finished'),
+    days: Math.floor(totalSeconds / 86400),
+    hours: Math.floor(totalSeconds % 86400 / 3600),
+    minutes: Math.floor(totalSeconds % 3600 / 60),
+    seconds: totalSeconds % 60,
+  };
+}
+function countdownDigits(value, width = 2) {
+  return String(value).padStart(width, '0');
+}
+function updateEjuCountdown() {
+  const root = $('[data-eju-countdown]');
+  if (!root) return;
+  const parts = getEjuCountdownParts();
+  const values = {
+    days: countdownDigits(parts.days, 2),
+    hours: countdownDigits(parts.hours),
+    minutes: countdownDigits(parts.minutes),
+    seconds: countdownDigits(parts.seconds),
+  };
+  Object.entries(values).forEach(([unit, value]) => {
+    const el = root.querySelector(`[data-countdown-${unit}]`);
+    if (el && el.textContent !== value) el.textContent = value;
+  });
+  root.classList.toggle('arrived', parts.reached);
+  const status = root.querySelector('[data-countdown-status]');
+  const statusText = parts.phase === 'upcoming'
+    ? '每一秒都算数'
+    : (parts.phase === 'exam-day' ? 'EJU 已开考，沉着作答' : '本次 EJU 已结束');
+  if (status) status.textContent = statusText;
+  root.setAttribute(
+    'aria-label',
+    parts.phase !== 'upcoming'
+      ? statusText
+      : `距离2026年第二回EJU日本国内首场开考还有${parts.days}天${parts.hours}小时${parts.minutes}分${parts.seconds}秒`
+  );
+}
+let ejuCountdownTimer = null;
+function startEjuCountdownClock() {
+  if (ejuCountdownTimer) clearTimeout(ejuCountdownTimer);
+  const tick = () => {
+    updateEjuCountdown();
+    // 对齐自然秒边界，避免 setInterval 长时间运行后产生可见漂移。
+    ejuCountdownTimer = setTimeout(tick, 1020 - Date.now() % 1000);
+  };
+  tick();
+}
+function ejuCountdownCardHtml() {
+  const countdown = getEjuCountdownParts();
+  const status = countdown.phase === 'upcoming'
+    ? '每一秒都算数'
+    : (countdown.phase === 'exam-day' ? 'EJU 已开考，沉着作答' : '本次 EJU 已结束');
+  return `<section class="eju-countdown" data-eju-countdown aria-label="EJU考试倒计时">
+    <div class="eju-countdown-head">
+      <div>
+        <div class="eju-countdown-kicker">2026 · 第2回 EJU</div>
+        <div class="eju-countdown-title">距离开考</div>
+      </div>
+      <time class="eju-countdown-date" datetime="${EJU_EXAM_TARGET}">11月8日 · 周日</time>
+    </div>
+    <div class="eju-countdown-grid" role="timer" aria-live="off">
+      <div class="eju-countdown-unit days"><strong class="eju-countdown-value" data-countdown-days>${countdownDigits(countdown.days, 2)}</strong><span class="eju-countdown-label">天</span></div>
+      <div class="eju-countdown-unit"><strong class="eju-countdown-value" data-countdown-hours>${countdownDigits(countdown.hours)}</strong><span class="eju-countdown-label">时</span></div>
+      <div class="eju-countdown-unit"><strong class="eju-countdown-value" data-countdown-minutes>${countdownDigits(countdown.minutes)}</strong><span class="eju-countdown-label">分</span></div>
+      <div class="eju-countdown-unit"><strong class="eju-countdown-value" data-countdown-seconds>${countdownDigits(countdown.seconds)}</strong><span class="eju-countdown-label">秒</span></div>
+    </div>
+    <div class="eju-countdown-foot">
+      <span class="eju-countdown-zone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>日本国内首场 · 09:30</span>
+      <span class="eju-countdown-status" data-countdown-status>${status}</span>
+    </div>
+  </section>`;
+}
 
 function isMemorySubject(subject) {
   return /记忆|記憶|暗記/.test(String(subject || ''));
@@ -1085,6 +1241,7 @@ function setMain(html) {
   if (!m) return;
   m.classList.remove('view-enter', 'slide-l', 'slide-r');
   m.innerHTML = html;
+  updateEjuCountdown();
 }
 function render() {
   updateBadge();
@@ -1197,6 +1354,7 @@ function renderReview() {
     <div class="screen-title">今日复习</div>
     <div class="screen-sub">${displayDate(today)}${remaining ? ` · 还剩 ${remaining} 题` : total ? ' · 全部完成' : ''}</div>
   </div>`;
+  html += ejuCountdownCardHtml();
   html += `<div class="sticky-summary">
     <div class="summary-nums">
       <div><div class="num">${total}</div><div class="lbl">今日待复习</div></div>
@@ -2710,6 +2868,10 @@ function init() {
       render();
     }
   }, 60 * 1000);
+  startEjuCountdownClock();
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) updateEjuCountdown();
+  });
   render();
   afterViewRender();
   // supabase-js 是 defer 加载的：就绪则立即启动同步，否则等页面 load 后再启动
