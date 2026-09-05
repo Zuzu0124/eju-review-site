@@ -53,9 +53,47 @@ requests that do not contain the matching Edge Function sync secret.
 
 | Website rating | `correct` | `error_group` | `mastery_note` |
 | --- | --- | --- | --- |
-| ○ 秒杀 | 1 | blank | `fast recall` |
-| △ 想起但慢 | 1 | blank | `recalled but slow` |
-| × 没思路 | 0 | U | `could not recall approach` |
+| ○ 熟练完成 | 1 | blank | `fast recall` |
+| △ 完成较慢 | 1 | blank | `recalled but slow` |
+| × 未独立完成 | 0 | U | `could not recall approach` |
 
 The website rating does not prove `independent`, `hint_level`, confidence, or
 verification, so those fields remain blank.
+
+## Mobile review flow (2026-09-05.1)
+
+- Compact expandable exam countdown; the home screen prioritizes remaining work,
+  subject selection and full or five-question sessions.
+- Phone layout keeps the single column and bottom navigation. Controls have larger
+  touch targets, review actions stay in the session footer, and long hints scroll
+  within the session body. Existing iOS standalone safe-area behavior is retained.
+- Entry drafts and the last book per subject/type are saved locally. Batch mode
+  accepts comma-separated question numbers and ascending ranges, previews the
+  result, and skips existing subject/type/source matches (maximum 50 per batch).
+- Hints are collapsed in both review views. Rating buttons preview the next date;
+  assisted or incorrect attempts belong under ×. Ratings are self-reports.
+- New maintenance reviews: × returns tomorrow; △ returns in seven days. New
+  events carry `scheduleVersion: 2`; unversioned historical events keep the original
+  scheduling rules during replay and merge.
+- The final question can be undone from the summary. The still-undoable session
+  event is held back from Sheets. `removedReviewIds` records cancellations so stale
+  cloud history cannot reintroduce a cancelled event. Use the current page version
+  on all devices; older clients do not understand these additional fields.
+- Statistics surface repeated difficulties and the next seven days of scheduled
+  work before inventory totals. These are review metrics, not exam-score estimates.
+
+### Regression checks
+
+The application remains buildless. The test-only dependency can be installed
+outside the repository:
+
+```bash
+npm install --prefix /tmp/eju-review-qa --no-audit --no-fund linkedom@0.18.13
+NODE_PATH=/tmp/eju-review-qa/node_modules node --test tests/mobile-review.test.cjs
+```
+
+The suite covers draft persistence, batch entry and duplicates, storage failure,
+historical schedule compatibility, collapsed hints, final-card undo, stale cloud
+merges, rapid double taps, filtering, and the five main views. It uses an isolated
+DOM and synthetic records; it does not verify browser layout, iPhone Safari,
+virtual-keyboard behavior, or live cloud/Sheets integration.

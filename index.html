@@ -629,6 +629,98 @@ button:focus-visible, .nav-btn:focus-visible, .subject-pick button:focus-visible
 .nav-btn.active::before { animation: navIndicator .32s var(--ease-spring); }
 @keyframes navPop { 0% { transform: scale(1); } 45% { transform: scale(1.14); } 100% { transform: scale(1); } }
 .nav-btn.active .ico svg { animation: navPop .34s var(--ease-out); }
+
+/* ---------- 手机优先：内容层级、触控、窄屏与安全边距 ---------- */
+body { font-size: 16px; }
+.app { padding-inline: max(16px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-right)); }
+.brand-sub { display: none; }
+.app-title { font-size: 16px; }
+.today-date { font-size: 12px; box-shadow: none; background: transparent; border: 0; padding: 0; }
+.screen-title { font-size: 25px; line-height: 1.3; }
+.screen-sub, .small { font-size: 14px; }
+.form-label, .section-title, .group-title, .sub-label { font-size: 14px; letter-spacing: normal; }
+.tiny, .tag, .chip, .nav-btn, .stat-table th { font-size: 12px; }
+.tag, .chip.zero { color: var(--muted); }
+.form-input { line-height: 1.5; }
+textarea.form-input { resize: vertical; min-height: 96px; }
+.card { box-shadow: none; }
+.btn.small, .book-chip, .subject-pick.seg button { min-height: 44px; }
+.book-chip, .btn.small { font-size: 14px; }
+.cta { background: var(--btn-bg); box-shadow: var(--shadow-sm); font-size: 17px; margin: 20px 0 12px; }
+.nav-bar { max-width: 620px; margin-inline: auto; padding-inline: env(safe-area-inset-left) env(safe-area-inset-right); }
+.nav-btn { min-height: 62px; }
+.exam-compact { border-bottom: 1px solid var(--line); margin-bottom: 0; }
+.exam-compact summary { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 12px; align-items: center; min-height: 44px; cursor: pointer; font-size: 14px; color: var(--muted); }
+.exam-compact summary::-webkit-details-marker { display: none; }
+.exam-detail { padding: 12px 0; font-variant-numeric: tabular-nums; }
+.exam-detail p { margin-bottom: 0; }
+.sync-indicator { appearance: none; border: 0; background: transparent; font: inherit; font-size: 12px; color: var(--muted); min-height: 44px; padding: 8px 0; text-align: left; cursor: pointer; }
+.review-hero { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px 16px 16px; }
+.hero-line { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+.remaining-num { font: 700 44px/1.1 var(--font-display); color: var(--accent); }
+.remaining-label { font-size: 14px; margin-left: 8px; }
+.review-options { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 8px; }
+.review-options .btn { padding-inline: 12px; }
+.next-plan { padding: 14px 4px 0; }
+.review-hint { margin-top: 16px; border-top: 1px solid var(--line); }
+.review-hint summary, .schedule-help summary { cursor: pointer; padding: 12px 0; min-height: 44px; font-size: 14px; color: var(--muted); }
+.review-hint .task-note { margin-top: 0; white-space: pre-wrap; font-size: 16px; }
+.schedule-help { margin-top: 8px; }
+.schedule-help p { margin-top: 0; }
+.batch-toggle { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: 14px; }
+.batch-toggle input { width: 20px; height: 20px; accent-color: var(--accent); }
+.batch-preview { max-height: 140px; overflow-y: auto; padding: 8px; background: var(--surface-2); margin-top: 8px; font-size: 14px; border-radius: 8px; }
+.library-filters { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; }
+.library-filters select:last-child { grid-column: 1/-1; }
+.rate-row, .session-rate { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; }
+.rate-btn { min-width: 0; min-height: 92px; padding: 12px 4px; gap: 7px; touch-action: manipulation; }
+.rate-btn .lbl, .rate-btn.xl .lbl { font-size: 14px; line-height: 1.35; opacity: 1; }
+.rate-next { font-size: 12px; line-height: 1.4; }
+.rate-btn.xl { min-height: 104px; }
+.rate-btn:disabled { opacity: .65; pointer-events: none; }
+.session-top, .session-foot { flex-shrink: 0; }
+.session-top { max-width: 620px; width: 100%; margin-inline: auto; }
+.session-body { min-height: 0; padding: 12px 16px; overscroll-behavior-y: contain; }
+.session-card { padding: 20px 16px; margin: auto 0; flex-shrink: 0; box-shadow: var(--shadow-sm); }
+.session-close { width: 44px; height: 44px; }
+.session-foot { background: var(--bg); border-top: 1px solid var(--line); }
+.session-undo { min-height: 44px; font-size: 14px; margin-top: 4px; }
+.rating-guide { font-size: 12px; color: var(--muted); margin: 0 0 10px; }
+.session-summary { min-height: 0; overflow-y: auto; justify-content: flex-start; padding: 32px 16px calc(24px + env(safe-area-inset-bottom)); }
+.sum-grid { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; width: 100%; }
+.sum-grid .lbl, .stat-tile .tlbl { font-size: 14px; }
+.toast .undo { min-height: 44px; padding-inline: 8px; }
+.weak-item { appearance: none; width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 16px; min-height: 64px; padding: 12px 0; border: 0; border-bottom: 1px solid var(--line); background: transparent; color: var(--text); font: inherit; text-align: left; cursor: pointer; }
+.weak-item span:first-child { min-width: 0; overflow-wrap: anywhere; }
+.weak-item span:last-child { flex-shrink: 0; font-size: 14px; color: var(--accent); }
+.weak-item small { display: block; font-size: 12px; color: var(--muted); margin-top: 4px; }
+.week-plan { display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); gap: 4px; text-align: center; }
+.week-plan span { display: block; font-size: 12px; color: var(--muted); }
+.week-plan strong { display: block; padding-block: 6px; font-size: 18px; }
+.empty { padding: 30px 12px; }
+.empty p { font-size: 14px; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+summary:focus-visible, .lib-main:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 360px) {
+  .app { padding-inline: 12px; }
+  .review-hero, .card { padding: 14px 12px; }
+  .session-foot, .session-body { padding-inline: 12px; }
+  .rate-row, .session-rate { gap: 6px; }
+  .rate-btn .lbl, .rate-btn.xl .lbl { font-size: 13px; }
+  .today-date { max-width: 112px; }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .session-card { margin-block: 0; }
+  .session-top { padding-block: 4px; }
+  .session-foot { padding-top: 6px; padding-bottom: max(6px,env(safe-area-inset-bottom)); }
+  .rate-btn.xl { min-height: 64px; padding: 6px; }
+  .rate-btn.xl .mark { display: none; }
+  .rating-guide { margin-bottom: 4px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+}
+
 </style>
 </head>
 <body>
@@ -662,7 +754,7 @@ button:focus-visible, .nav-btn:focus-visible, .subject-pick button:focus-visible
 <script>
 'use strict';
 // 应用版本号：每次发布更新（数据页底部可见，便于确认设备上跑的是哪一版）
-const APP_VERSION = '2026-08-19.1';
+const APP_VERSION = '2026-09-05.1';
 /* ============================================================
  * EJU 间隔复习 — 单文件应用
  * 数据: localStorage（eju.items.v2）；旧版 eju.items.v1 自动迁移且保留不动
@@ -719,6 +811,7 @@ const KEYS = {
   LEGACY_LITE_ITEMS: 'eju.v2', // 更早期精简版的数据 key
   MIGRATED_FLAG: 'eju.migrated.v1to2',
   BOOKS: 'eju.books.v1',
+  ENTRY_DRAFT: 'eju.entryDraft.v1',
   TIER_REPLAY_FLAG: 'eju.tierReplay.v1',
   FIX_ESSENCE_FLAG: 'eju.fix.essenceMidori.v1',
 };
@@ -765,6 +858,8 @@ function updateEjuCountdown() {
     if (el && el.textContent !== value) el.textContent = value;
   });
   root.classList.toggle('arrived', parts.reached);
+  const compact = root.querySelector('[data-countdown-compact]');
+  if (compact) compact.textContent = parts.phase === 'upcoming' ? `距 EJU ${parts.days} 天` : parts.phase === 'exam-day' ? 'EJU 考试日' : '本次 EJU 已结束';
   const status = root.querySelector('[data-countdown-status]');
   const statusText = parts.phase === 'upcoming'
     ? '每一秒都算数'
@@ -788,37 +883,22 @@ function startEjuCountdownClock() {
   tick();
 }
 function ejuCountdownCardHtml() {
-  const countdown = getEjuCountdownParts();
-  const status = countdown.phase === 'upcoming'
-    ? '每一秒都算数'
-    : (countdown.phase === 'exam-day' ? 'EJU 已开考，沉着作答' : '本次 EJU 已结束');
-  return `<section class="eju-countdown" data-eju-countdown aria-label="EJU考试倒计时">
-    <div class="eju-countdown-head">
-      <div>
-        <div class="eju-countdown-kicker">2026 · 第2回 EJU</div>
-        <div class="eju-countdown-title">距离开考</div>
-      </div>
-      <time class="eju-countdown-date" datetime="${EJU_EXAM_TARGET}">11月8日 · 周日</time>
+  const c = getEjuCountdownParts();
+  const label = c.phase === 'upcoming' ? `距 EJU ${c.days} 天` : c.phase === 'exam-day' ? 'EJU 考试日' : '本次 EJU 已结束';
+  return `<details class="exam-compact" data-eju-countdown>
+    <summary><span data-countdown-compact>${label}</span><span class="tiny">11月8日 · 详情</span></summary>
+    <div class="exam-detail" role="timer" aria-live="off">
+      <span data-countdown-days>${c.days}</span> 天
+      <span data-countdown-hours>${countdownDigits(c.hours)}</span> 时
+      <span data-countdown-minutes>${countdownDigits(c.minutes)}</span> 分
+      <span data-countdown-seconds>${countdownDigits(c.seconds)}</span> 秒
+      <p class="tiny">2026 年第 2 回 · 日本国内首场 09:30</p>
     </div>
-    <div class="eju-countdown-grid" role="timer" aria-live="off">
-      <div class="eju-countdown-unit days"><strong class="eju-countdown-value" data-countdown-days>${countdownDigits(countdown.days, 2)}</strong><span class="eju-countdown-label">天</span></div>
-      <div class="eju-countdown-unit"><strong class="eju-countdown-value" data-countdown-hours>${countdownDigits(countdown.hours)}</strong><span class="eju-countdown-label">时</span></div>
-      <div class="eju-countdown-unit"><strong class="eju-countdown-value" data-countdown-minutes>${countdownDigits(countdown.minutes)}</strong><span class="eju-countdown-label">分</span></div>
-      <div class="eju-countdown-unit"><strong class="eju-countdown-value" data-countdown-seconds>${countdownDigits(countdown.seconds)}</strong><span class="eju-countdown-label">秒</span></div>
-    </div>
-    <div class="eju-countdown-foot">
-      <span class="eju-countdown-zone"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>日本国内首场 · 09:30</span>
-      <span class="eju-countdown-status" data-countdown-status>${status}</span>
-    </div>
-  </section>`;
+  </details>`;
 }
 
-function isMemorySubject(subject) {
-  return /记忆|記憶|暗記/.test(String(subject || ''));
-}
-function seqFor(subject) {
-  return isMemorySubject(subject) ? SEQ_MEMORY : SEQ_PROCEDURAL;
-}
+function isMemorySubject(subject) { return /记忆|記憶|暗記/.test(String(subject || '')); }
+function seqFor(subject) { return isMemorySubject(subject) ? SEQ_MEMORY : SEQ_PROCEDURAL; }
 
 // ---------- 存取 ----------
 function loadJSON(key, fallback) {
@@ -835,9 +915,11 @@ function saveItems(items) {
   try {
     localStorage.setItem(KEYS.ITEMS, JSON.stringify(items));
     if (!suppressCloudSync) scheduleCloudPush();
+    return true;
   } catch (e) {
     console.error('Save error:', e);
     alert('保存失败: ' + e.message);
+    return false;
   }
 }
 
@@ -863,6 +945,7 @@ function normalizeItem(item) {
         .filter(h => h && isValidDateStr(h.date) && RATINGS.includes(h.rating))
         .map((h, index) => {
           const out = { date: h.date, rating: h.rating };
+          if (h.scheduleVersion === 2) out.scheduleVersion = 2;
           if (h.id) out.id = String(h.id);
           const recoverForLearningOs = h.date >= LEARNING_OS_RECOVERY_START_DATE && !h.learningOsSync;
           if (!out.id && recoverForLearningOs) {
@@ -896,6 +979,10 @@ function normalizeItem(item) {
     status,
     updatedAt: typeof item.updatedAt === 'string' ? item.updatedAt : new Date().toISOString(),
   };
+  if (Array.isArray(item.removedReviewIds)) {
+    out.removedReviewIds = [...new Set(item.removedReviewIds.filter(id => typeof id === 'string'))];
+    out.history = out.history.filter(h => !out.removedReviewIds.includes(h.id));
+  }
   if (item.legacy && typeof item.legacy === 'object') out.legacy = item.legacy;
   return out;
 }
@@ -1000,7 +1087,7 @@ function recomputeItem(item) {
     dueDate: item.dueDate,
     history: [],
   };
-  for (const h of sorted) applyRating(sim, h.rating, h.date, false);
+  for (const h of sorted) applyRating(sim, h.rating, h.date, false, h.scheduleVersion || 1);
   item.history = sorted;
   item.intervalIndex = sim.intervalIndex;
   item.status = sim.status;
@@ -1110,8 +1197,8 @@ function seedPresetBooks() {
 
 // ---------- 核心调度逻辑 ----------
 // ○: intervalIndex+1（最后一档→毕业）；△: 档位不变；×: 归零、明天再来
-// 毕业题: 每 30 天抽查；抽查 × → 降回 learning 的 7 天档
-function applyRating(item, rating, today, recordHistory = true) {
+// 新评分：维护题 × → 明天补救，△ → 7 天后；旧评分仍按旧规则回放。
+function applyRating(item, rating, today, recordHistory = true, scheduleVersion = recordHistory ? 2 : 1) {
   const seq = seqFor(item.subject);
   let reviewEvent = null;
   if (recordHistory) {
@@ -1121,15 +1208,20 @@ function applyRating(item, rating, today, recordHistory = true) {
       rating,
       createdAt: new Date().toISOString(),
       learningOsSync: 'pending',
+      scheduleVersion,
     };
     item.history.push(reviewEvent);
   }
   if (item.status === 'graduated') {
     if (rating === '×') {
       item.status = 'learning';
-      const idx = seq.indexOf(GRAD_DEMOTE_DAYS);
+      const idx = scheduleVersion >= 2 ? 0 : seq.indexOf(GRAD_DEMOTE_DAYS);
       item.intervalIndex = idx >= 0 ? idx : seq.length - 2;
       item.dueDate = addDaysStr(today, seq[item.intervalIndex]);
+    } else if (rating === '△' && scheduleVersion >= 2) {
+      item.status = 'learning';
+      item.intervalIndex = seq.indexOf(7);
+      item.dueDate = addDaysStr(today, 7);
     } else {
       item.dueDate = addDaysStr(today, GRAD_CYCLE_DAYS);
     }
@@ -1210,6 +1302,9 @@ const state = {
   entrySubject: SUBJECTS[0],
   entryBook: null,      // 当前选中的书目；null = 手动输入完整出处
   bookEditMode: false,  // 书目胶囊的删除模式
+  entryDraft: { source: '', num: '', note: '', batch: false },
+  entryBooks: {},
+  reviewSubject: 'all',
   books: {},            // { "类型|科目": [书名…] }
   libBoard: 'all',
   libSubject: 'all',
@@ -1245,7 +1340,11 @@ function setMain(html) {
 }
 function render() {
   updateBadge();
-  $$('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.view === state.view));
+  $$('.nav-btn').forEach(b => {
+    const active = b.dataset.view === state.view;
+    b.classList.toggle('active', active);
+    if (active) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+  });
   switch (state.view) {
     case 'review': renderReview(); break;
     case 'entry': renderEntry(); break;
@@ -1342,38 +1441,29 @@ function renderReview() {
 
   const allPending = [...overdue, ...dueToday, ...gradOrdered];
   const bySubj = groupBySubject(allPending);
-  const chips = SUBJECTS.concat([...bySubj.keys()].filter(s => !SUBJECTS.includes(s)))
-    .map(s => {
-      const n = (bySubj.get(s) || []).length;
-      if (!SUBJECTS.includes(s) && n === 0) return '';
-      return `<span class="chip ${n === 0 ? 'zero' : ''}">${escapeHtml(s)} ${n}</span>`;
-    }).join('');
+  if (!bySubj.has(state.reviewSubject)) state.reviewSubject = 'all';
+  const selectedCount = state.reviewSubject === 'all' ? remaining : bySubj.get(state.reviewSubject).length;
+  const chips = [...bySubj.entries()].map(([subject, list]) =>
+    `<span class="chip">${escapeHtml(subject)} ${list.length}</span>`).join('');
 
   const pct = total ? Math.round(done / total * 100) : 0;
-  let html = `<div class="screen-head">
-    <div class="screen-title">今日复习</div>
-    <div class="screen-sub">${displayDate(today)}${remaining ? ` · 还剩 ${remaining} 题` : total ? ' · 全部完成' : ''}</div>
-  </div>`;
+  let html = `<div class="screen-head"><div class="screen-title">今日复习</div></div>`;
   html += ejuCountdownCardHtml();
-  html += `<div class="sticky-summary">
-    <div class="summary-nums">
-      <div><div class="num">${total}</div><div class="lbl">今日待复习</div></div>
-      <div><div class="num" style="color:var(--good)">${done}</div><div class="lbl">已完成</div></div>
-      <div><div class="num" style="color:${remaining ? 'var(--accent)' : 'var(--muted)'}">${remaining}</div><div class="lbl">剩余</div></div>
-      <div><div class="num">${tomorrowCount}</div><div class="lbl">明日已排期</div></div>
-    </div>
-    ${total ? `<div class="progress-wrap">
-      <div class="progress ${remaining === 0 ? 'done' : ''}"><i style="width:${pct}%"></i></div>
-      <span class="progress-pct">${pct}%</span>
-    </div>` : ''}
-    <div class="chips">${chips}</div>
-  </div>`;
-  if (remaining > 0) {
-    html += `<button class="cta" onclick="startSession()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="6 3 20 12 6 21 6 3"/></svg>
-      开始今日复习<span class="cta-count">${remaining} 题</span>
-    </button>`;
+  html += `<button class="sync-indicator" onclick="navigate('data')">${escapeHtml(syncLabel())}</button>`;
+  if (remaining > 0 || done > 0) {
+    html += `<section class="review-hero" aria-label="今日复习进度">
+      <div class="hero-line"><div><span class="remaining-num">${remaining}</span><span class="remaining-label">题待复习</span></div>
+        <span class="tiny">已完成 ${done} / ${total}</span></div>
+      <div class="progress ${remaining === 0 ? 'done' : ''}" role="progressbar" aria-label="今日完成比例" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></div>
+      ${remaining ? `<button class="cta" onclick="startSession(Infinity,state.reviewSubject)">开始复习<span class="cta-count">${selectedCount} 题</span></button>
+        <div class="review-options"><label class="sr-only" for="review-subject">复习科目</label>
+        <select id="review-subject" class="form-input" onchange="state.reviewSubject=this.value;renderReview()">
+          <option value="all">全部科目</option>${[...bySubj.keys()].map(subject => `<option value="${escapeHtml(subject)}" ${state.reviewSubject === subject ? 'selected' : ''}>${escapeHtml(subject)}</option>`).join('')}
+        </select><button class="btn secondary" onclick="startSession(5, state.reviewSubject)">先做 ${Math.min(5,selectedCount)} 题</button></div>` : ''}
+      <div class="chips">${chips}</div>
+    </section>`;
   }
+  html += `<div class="next-plan tiny">明日已排期 ${tomorrowCount} 题${remaining ? ' · 不含今天尚未完成的题' : ''}</div>`;
 
   if (remaining === 0) {
     if (done > 0) {
@@ -1385,12 +1475,17 @@ function renderReview() {
         <div class="empty-title">今日复习完成</div>
         ${done} 题已全部完成，明天见！
       </div>`;
-    } else {
+    } else if (!state.items.length) {
       html += `<div class="empty">
         <svg class="calm-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
         <div class="empty-title">今天没有待复习的题目</div>
-        去「录入」添加今天学的母题吧
+        <p>记录一道今天学过的题，明天开始复习。</p>
+        <button class="btn block" onclick="navigate('entry')">添加第一题</button>
+        <button class="btn secondary block mt12" onclick="navigate('data')">登录恢复数据</button>
       </div>`;
+    } else {
+      const next = state.items.map(i => i.dueDate).filter(d => d > today).sort()[0];
+      html += `<div class="empty"><div class="empty-title">今天暂无到期题目</div><p>${next ? `下次复习：${displayDate(next)}` : '暂时没有后续排期'}</p><button class="btn secondary" onclick="navigate('entry')">录入新题</button></div>`;
     }
     setMain(html);
     return;
@@ -1420,12 +1515,35 @@ function renderReview() {
   setMain(html);
 }
 
+function syncLabel() {
+  if (!state.sync.user) return '仅保存在本机 · 登录同步';
+  if (state.sync.busy) return '正在同步…';
+  return state.sync.status === '已同步' ? '已同步 · 查看详情' : `${state.sync.status} · 查看详情`;
+}
+function reviewHintHtml(item) {
+  if (!item.note) return '';
+  return `<details class="review-hint"><summary>查看提示 / 易错点</summary><div class="task-note">${escapeHtml(item.note)}</div></details>`;
+}
+function ratingButtonsHtml(item, focus = false) {
+  const labels = ['熟练完成', '完成较慢', '未独立完成'];
+  const colors = ['good', 'mid', 'bad'];
+  return RATINGS.map((rating, n) => {
+    const simulated = JSON.parse(JSON.stringify(item));
+    applyRating(simulated, rating, todayStr(), false, 2);
+    const days = diffDays(simulated.dueDate, todayStr());
+    const next = days === 1 ? '明天' : `${days} 天后`;
+    const action = focus ? `sessionRate('${rating}',event)` : `rateItem('${item.id}','${rating}',event)`;
+    return `<button class="rate-btn rate-${colors[n]} ${focus ? 'xl' : ''}" onclick="${action}"><span class="mark">${rating}</span><span class="lbl">${labels[n]}</span><span class="rate-next">${next}</span></button>`;
+  }).join('');
+}
+window.navigate = navigate;
+
 function taskCard(item, today) {
   const seq = seqFor(item.subject);
   const isGrad = item.status === 'graduated';
   const late = !isGrad && item.dueDate < today ? diffDays(today, item.dueDate) : 0;
   const stage = isGrad
-    ? `<span class="tag grad">已毕业 · 抽查</span>`
+    ? `<span class="tag grad">维护复习 · 抽查</span>`
     : `<span class="tag stage">档位 ${item.intervalIndex + 1}/${seq.length} · ${seq[item.intervalIndex]}天</span>`;
   return `<div class="task-card ${late ? 'overdue' : ''} ${isGrad ? 'gradcheck' : ''}" data-id="${item.id}">
     <div class="task-top"><div class="task-source">${escapeHtml(item.source)}</div></div>
@@ -1435,12 +1553,9 @@ function taskCard(item, today) {
       ${stage}
       ${late ? `<span class="tag late">逾期 ${late} 天</span>` : ''}
     </div>
-    ${item.note ? `<div class="task-note">${escapeHtml(item.note)}</div>` : ''}
-    <div class="rate-row">
-      <button class="rate-btn rate-good" onclick="rateItem('${item.id}','○',event)"><span class="mark">○</span><span class="lbl">秒杀</span></button>
-      <button class="rate-btn rate-mid" onclick="rateItem('${item.id}','△',event)"><span class="mark">△</span><span class="lbl">想起但慢</span></button>
-      <button class="rate-btn rate-bad" onclick="rateItem('${item.id}','×',event)"><span class="mark">×</span><span class="lbl">没思路</span></button>
-    </div>
+    ${reviewHintHtml(item)}
+    <p class="rating-guide">按看提示前的表现评分；借助提示或做错选 ×。</p>
+    <div class="rate-row">${ratingButtonsHtml(item)}</div>
   </div>`;
 }
 
@@ -1455,22 +1570,17 @@ function flashCard(id) {
 }
 function rateItem(id, rating, evt) {
   const item = state.items.find(i => i.id === id);
-  if (!item) return;
+  if (!item || item.dueDate > todayStr()) return;
   const before = JSON.parse(JSON.stringify(item));
   const today = todayStr();
   const reviewEvent = applyRating(item, rating, today);
-  saveItems(state.items); // 数据先落盘，动画只是表现层
+  if (!saveItems(state.items)) { Object.assign(item, before); return; }
   queueLearningOsSync(item.id, reviewEvent.id);
-  const seq = seqFor(item.subject);
-  let msg;
-  if (item.status === 'graduated' && before.status === 'learning') msg = `🎓 已毕业！30 天后抽查`;
-  else if (item.status === 'graduated') msg = `抽查通过，30 天后再见`;
-  else if (rating === '×') msg = `已重置，明天再来`;
-  else msg = `下次复习: ${seq[item.intervalIndex]} 天后`;
+  const msg = `下次复习：${displayDate(item.dueDate)}`;
   const finish = () => {
     render();
     showToast(`${rating} ${msg}`, () => {
-      Object.assign(item, before);
+      restoreReviewSnapshot(item.id, before, reviewEvent.id);
       saveItems(state.items);
       render();
       flashCard(item.id);
@@ -1496,11 +1606,22 @@ window.rateItem = rateItem;
 let session = null;
 let sessionUndoInfo = null;
 
-function startSession() {
+// Keep an explicit cancellation ID so an older cloud copy cannot resurrect an undo.
+function restoreReviewSnapshot(id, before, eventId) {
+  const item = state.items.find(i => i.id === id);
+  if (!item) return;
+  const removedReviewIds = [...new Set([...(item.removedReviewIds || []), ...(before.removedReviewIds || []), eventId])];
+  const history = mergeHistories(before.history, item.history).filter(h => !removedReviewIds.includes(h.id));
+  Object.assign(item, before, { history, removedReviewIds, updatedAt: new Date().toISOString() });
+  recomputeItem(item);
+}
+
+function startSession(limit = Infinity, subject = 'all') {
   const today = todayStr();
   const { overdue, dueToday, gradChecks } = getDueTasks(state.items, today);
-  const queue = [...overdue, ...dueToday, ...stableGradOrder(gradChecks, today)].map(i => i.id);
-  if (!queue.length) return;
+  const queue = [...overdue, ...dueToday, ...stableGradOrder(gradChecks, today)]
+    .filter(i => subject === 'all' || i.subject === subject).slice(0, limit).map(i => i.id);
+  if (!queue.length) { showToast('这个科目今天没有到期题'); return; }
   session = { queue, idx: 0, counts: { '○': 0, '△': 0, '×': 0 }, startedAt: Date.now() };
   sessionUndoInfo = null;
   renderSession();
@@ -1522,6 +1643,7 @@ function renderSession(dir) {
   const root = $('#session-root');
   if (!root) return;
   if (!session) { root.innerHTML = ''; return; }
+  session.busy = false;
   const item = sessionCurrentItem();
   const total = session.queue.length;
   const rated = session.counts['○'] + session.counts['△'] + session.counts['×'];
@@ -1531,7 +1653,7 @@ function renderSession(dir) {
   const today = todayStr();
   const late = !isGrad && item.dueDate < today ? diffDays(today, item.dueDate) : 0;
   const stage = isGrad
-    ? `<span class="tag grad">已毕业 · 抽查</span>`
+    ? `<span class="tag grad">维护复习 · 抽查</span>`
     : `<span class="tag stage">档位 ${item.intervalIndex + 1}/${seq.length} · ${seq[item.intervalIndex]}天</span>`;
   const pctDone = Math.round(rated / total * 100);
   // 卡片入场方向：评级→新卡从右滑入；撤销→原卡从左返回
@@ -1553,15 +1675,13 @@ function renderSession(dir) {
           ${stage}
           ${late ? `<span class="tag late">逾期 ${late} 天</span>` : ''}
         </div>
-        ${item.note ? `<div class="task-note">${escapeHtml(item.note)}</div>` : ''}
+        <p class="tiny recall-guide">先在纸上独立完成，再查看提示并评分。</p>
+        ${reviewHintHtml(item)}
       </div>
     </div>
     <div class="session-foot">
-      <div class="session-rate">
-        <button class="rate-btn rate-good xl" onclick="sessionRate('○')"><span class="mark">○</span><span class="lbl">秒杀</span></button>
-        <button class="rate-btn rate-mid xl" onclick="sessionRate('△')"><span class="mark">△</span><span class="lbl">想起但慢</span></button>
-        <button class="rate-btn rate-bad xl" onclick="sessionRate('×')"><span class="mark">×</span><span class="lbl">没思路</span></button>
-      </div>
+      <p class="rating-guide">按看提示前的表现评分；借助提示或做错选 ×。</p>
+      <div class="session-rate">${ratingButtonsHtml(item, true)}</div>
       <button class="session-undo ${sessionUndoInfo ? '' : 'hidden'}" onclick="sessionUndo()">撤销上一题</button>
     </div>
   </div>`;
@@ -1596,28 +1716,30 @@ function animateCardSwap(prevPct) {
   }
 }
 
-function sessionRate(rating) {
-  if (!session) return;
+function sessionRate(rating, evt) {
+  if (!session || session.busy) return;
+  session.busy = true;
   const item = sessionCurrentItem();
   if (!item) { renderSessionSummary(); return; }
   const before = JSON.parse(JSON.stringify(item));
   const reviewEvent = applyRating(item, rating, todayStr());
-  saveItems(state.items); // 与列表评级同一数据路径，先落盘
+  if (!saveItems(state.items)) { Object.assign(item, before); session.busy = false; return; }
   queueLearningOsSync(item.id, reviewEvent.id);
   const total = session.queue.length;
   const ratedBefore = session.counts['○'] + session.counts['△'] + session.counts['×'];
   session.counts[rating]++;
-  sessionUndoInfo = { id: item.id, before, rating, idx: session.idx };
+  sessionUndoInfo = { id: item.id, before, rating, idx: session.idx, eventId: reviewEvent.id };
   session.idx++;
   if (navigator.vibrate) { try { navigator.vibrate(8); } catch (e) {} }
   const card = $('#session-card');
   if (card && !prefersReducedMotion()) {
-    const btn = typeof event !== 'undefined' && event && event.target && event.target.closest
-      ? event.target.closest('.rate-btn') : null;
+    const btn = evt?.target?.closest('.rate-btn');
+    $$('.session-rate button').forEach(button => button.disabled = true);
     if (btn) btn.classList.add('pressed');
     const prevPct = Math.round(ratedBefore / total * 100);
     // 让按钮脉冲先被看到一瞬，再无缝换卡
-    setTimeout(() => animateCardSwap(prevPct), 110);
+    const activeSession = session;
+    setTimeout(() => { if (session === activeSession && !session.closing) animateCardSwap(prevPct); }, 110);
   } else {
     renderSession();
   }
@@ -1625,10 +1747,10 @@ function sessionRate(rating) {
 window.sessionRate = sessionRate;
 
 function sessionUndo() {
-  if (!session || !sessionUndoInfo) return;
+  if (!session || session.busy || !sessionUndoInfo) return;
   const item = state.items.find(i => i.id === sessionUndoInfo.id);
   if (item) {
-    Object.assign(item, JSON.parse(JSON.stringify(sessionUndoInfo.before)));
+    restoreReviewSnapshot(item.id, sessionUndoInfo.before, sessionUndoInfo.eventId);
     saveItems(state.items);
   }
   session.counts[sessionUndoInfo.rating] = Math.max(0, session.counts[sessionUndoInfo.rating] - 1);
@@ -1641,6 +1763,7 @@ window.sessionUndo = sessionUndo;
 function renderSessionSummary() {
   const root = $('#session-root');
   if (!root || !session) return;
+  session.busy = false;
   const { counts, startedAt } = session;
   const rated = counts['○'] + counts['△'] + counts['×'];
   if (rated === 0) { endSession(); return; }
@@ -1655,23 +1778,26 @@ function renderSessionSummary() {
       <div class="empty-title">本轮复习完成</div>
       <div class="sum-sub">共 ${rated} 题 · 用时约 ${mins} 分钟</div>
       <div class="sum-grid">
-        <div><div class="num" style="color:var(--good)">${counts['○']}</div><div class="lbl">○ 秒杀</div></div>
-        <div><div class="num" style="color:var(--mid)">${counts['△']}</div><div class="lbl">△ 想起但慢</div></div>
-        <div><div class="num" style="color:var(--bad)">${counts['×']}</div><div class="lbl">× 没思路</div></div>
+        <div><div class="num" style="color:var(--good)">${counts['○']}</div><div class="lbl">○ 熟练完成</div></div>
+        <div><div class="num" style="color:var(--mid)">${counts['△']}</div><div class="lbl">△ 完成较慢</div></div>
+        <div><div class="num" style="color:var(--bad)">${counts['×']}</div><div class="lbl">× 未独立完成</div></div>
       </div>
-      <div class="sum-meta"><span class="tag subj">○ 率 ${rate}%</span></div>
-      <button class="btn" onclick="endSession()">完成</button>
+      <div class="sum-meta"><span class="tag subj">自评熟练率 ${rate}%</span></div>
+      ${sessionUndoInfo ? `<button class="btn secondary mb12" onclick="sessionUndo()">撤销上一题</button>` : ''}
+      <button class="btn" onclick="endSession()">返回今日复习</button>
     </div>
   </div>`;
   animateCountUp('.sum-grid .num');
 }
 
 function endSession() {
+  if (session) { session.closing = true; session.busy = true; }
   const root = $('#session-root');
   const shell = root ? root.querySelector('.session') : null;
   const done = () => {
     session = null;
     sessionUndoInfo = null;
+    scheduleNextLearningOsSync();
     if (root) root.innerHTML = '';
     render();
   };
@@ -1685,6 +1811,76 @@ function endSession() {
 window.endSession = endSession;
 
 // --- 录入页 ---
+function persistEntryDraft() {
+  try { localStorage.setItem(KEYS.ENTRY_DRAFT, JSON.stringify({
+    draft: state.entryDraft, books: state.entryBooks,
+    subject: state.entrySubject, board: state.entryBoard,
+  })); } catch (e) { /* Keep the in-memory draft if browser storage is unavailable. */ }
+}
+function restoreEntryDraft() {
+  const saved = loadJSON(KEYS.ENTRY_DRAFT, {});
+  if (!saved || typeof saved !== 'object') return;
+  if (SUBJECTS.includes(saved.subject)) state.entrySubject = saved.subject;
+  if (Object.hasOwn(BOARDS, saved.board)) state.entryBoard = saved.board;
+  for (const field of ['source','num','note']) {
+    if (typeof saved.draft?.[field] === 'string') state.entryDraft[field] = saved.draft[field];
+  }
+  state.entryDraft.batch = saved.draft?.batch === true;
+  state.entryBooks = saved.books && typeof saved.books === 'object' && !Array.isArray(saved.books) ? saved.books : {};
+  restoreEntryBook();
+}
+function restoreEntryBook() {
+  const key = bookKey(state.entryBoard, state.entrySubject);
+  const book = state.entryBooks[key];
+  state.entryBook = (state.books[key] || []).includes(book) ? book : null;
+}
+function updateEntryDraft(field, value) {
+  state.entryDraft[field] = value;
+  persistEntryDraft();
+  if (field === 'num' || field === 'source') renderEntryPreview();
+}
+function entrySources() {
+  const book = (state.books[bookKey(state.entryBoard, state.entrySubject)] || []).includes(state.entryBook) ? state.entryBook : null;
+  const raw = (book ? state.entryDraft.num : state.entryDraft.source).trim();
+  if (!raw) return [];
+  if (!book || !state.entryDraft.batch) return [book ? `${book} ${raw}` : raw];
+  const values = [];
+  for (const part of raw.split(/[,，、\n]+/).map(v => v.trim()).filter(Boolean)) {
+    const range = part.match(/^(\d+)\s*[-–~～]\s*(\d+)$/);
+    if (range) {
+      const a = Number(range[1]), b = Number(range[2]);
+      if (!Number.isSafeInteger(a) || !Number.isSafeInteger(b) || b < a || b-a >= 50) throw new Error('题号范围需递增，每次最多 50 题');
+      for (let n=a;n<=b;n++) values.push(`${book} ${n}`);
+    } else values.push(`${book} ${part}`);
+    if (values.length > 50) throw new Error('每次最多录入 50 题');
+  }
+  return [...new Set(values)];
+}
+function sourceIdentity(source) { return source.normalize('NFKC').replace(/\s+/g, ' ').trim().toLowerCase(); }
+function entryDuplicate(source) {
+  return state.items.find(i => i.subject === state.entrySubject && i.board === state.entryBoard && sourceIdentity(i.source) === sourceIdentity(source));
+}
+function renderEntryPreview() {
+  const target = $('#entry-preview');
+  if (!target) return;
+  try {
+    const sources = entrySources();
+    const duplicates = sources.filter(entryDuplicate);
+    const first = duplicates.length ? entryDuplicate(duplicates[0]) : null;
+    target.innerHTML = sources.length ? `<div class="tiny">将添加 ${sources.length-duplicates.length} 题${duplicates.length ? ` · 跳过 ${duplicates.length} 道已有题` : ''}</div>
+      ${state.entryDraft.batch && state.entryBook ? `<div class="batch-preview">${sources.map(source => `<div>${escapeHtml(source)}</div>`).join('')}</div>` : ''}
+      ${first ? `<button class="btn small secondary mt12" onclick="openLibraryItem('${first.id}')">查看已有题目</button>` : ''}` : '';
+  } catch (error) { target.innerHTML = `<div class="danger-text">${escapeHtml(error.message)}</div>`; }
+}
+function openLibraryItem(id) {
+  state.libSearch = ''; state.libSubject = 'all'; state.libBoard = 'all'; state.libStatus = 'all';
+  state.libExpanded = new Set([id]);
+  navigate('library');
+  document.querySelector(`.lib-item[data-id="${id}"]`)?.scrollIntoView({block:'center'});
+}
+window.updateEntryDraft = updateEntryDraft;
+window.openLibraryItem = openLibraryItem;
+
 function renderEntry() {
   const today = todayStr();
   const todayItems = state.items.filter(i => i.addedDate === today)
@@ -1711,7 +1907,7 @@ function renderEntry() {
     <div class="subject-pick">${SUBJECTS.map(s =>
       `<button class="${s === state.entrySubject ? 'on' : ''}" onclick="setEntrySubject('${s}')">${s}</button>`).join('')}
     </div>
-    <div class="tiny mt12">间隔序列: ${seqFor(state.entrySubject).join(' → ')} 天</div>
+    <details class="schedule-help"><summary>复习如何安排？</summary><p class="tiny">明天首次复习；之后根据自评延长或缩短间隔。熟练时依次为 ${seqFor(state.entrySubject).join(' → ')} 天。</p></details>
     <label class="form-label">书目（点选后只需输入题号）</label>
     <div class="book-chips">
       ${books.map(b => `<button class="book-chip ${b === book && !state.bookEditMode ? 'on' : ''}" onclick="${state.bookEditMode ? `removeBook(${jsStr(b)})` : `selectBook(${jsStr(b)})`}">${escapeHtml(b)}${state.bookEditMode ? '<span class="bx">×</span>' : ''}</button>`).join('')}
@@ -1720,15 +1916,17 @@ function renderEntry() {
       ${books.length ? `<button class="book-chip ghost" onclick="toggleBookEdit()">${state.bookEditMode ? '完成' : '编辑'}</button>` : ''}
     </div>
     ${book ? `
-    <label class="form-label">题号 / 页码（书：${escapeHtml(book)}）</label>
-    <input type="text" class="form-input" id="entry-num" placeholder="例: p.123 例3 / 12" enterkeyhint="done">
+    <label class="form-label" for="entry-num">题号 / 页码（书：${escapeHtml(book)}）</label>
+    <input type="text" class="form-input" id="entry-num" placeholder="${state.entryDraft.batch ? '例：1, 3, 5-8' : '例: p.123 例3 / 12'}" enterkeyhint="done" value="${escapeHtml(state.entryDraft.num)}" oninput="updateEntryDraft('num',this.value)">
+    <label class="batch-toggle"><input type="checkbox" ${state.entryDraft.batch ? 'checked' : ''} onchange="updateEntryDraft('batch',this.checked);renderEntry()">批量录入题号</label>
     ` : `
-    <label class="form-label">${state.entryBoard === 'kakomon' ? '出处（年度/回次 + 题号）' : '出处（教材名 + 页码/题号）'}</label>
-    <input type="text" class="form-input" id="entry-source" list="source-suggest" placeholder="${placeholder}" enterkeyhint="done">
+    <label class="form-label" for="entry-source">${state.entryBoard === 'kakomon' ? '出处（年度/回次 + 题号）' : '出处（教材名 + 页码/题号）'}</label>
+    <input type="text" class="form-input" id="entry-source" list="source-suggest" placeholder="${placeholder}" enterkeyhint="done" value="${escapeHtml(state.entryDraft.source)}" oninput="updateEntryDraft('source',this.value)">
     <datalist id="source-suggest">${sources.map(s => `<option value="${escapeHtml(s)}">`).join('')}</datalist>
     `}
-    <label class="form-label">备注（可选）</label>
-    <input type="text" class="form-input" id="entry-note" placeholder="易错点、思路提示等">
+    <label class="form-label" for="entry-note">备注（可选）</label>
+    <textarea class="form-input" id="entry-note" rows="3" placeholder="易错点、思路提示等（复习时默认折叠）" oninput="updateEntryDraft('note',this.value)">${escapeHtml(state.entryDraft.note)}</textarea>
+    <div id="entry-preview" class="mt12" aria-live="polite"></div>
     <button class="btn block mt12 ${state.entryBoard === 'kakomon' ? 'kako' : ''}" onclick="addItem()">添加${BOARDS[state.entryBoard]}（明天开始复习）</button>
   </div>`;
   html += `<div class="section-title">今日已录入 (${todayItems.length})</div>`;
@@ -1745,18 +1943,21 @@ function renderEntry() {
     </div>`).join('') + `</div>`;
   }
   setMain(html);
+  renderEntryPreview();
   state.justAdded = null; // 入场余晖只播一次
   const input = $('#entry-num') || $('#entry-source');
-  if (input) input.addEventListener('keydown', e => { if (e.key === 'Enter') addItem(); });
+  if (input) input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); addItem(); } });
 }
-function setEntrySubject(s) { state.entrySubject = s; renderEntry(); }
+function setEntrySubject(s) { state.entrySubject = s; restoreEntryBook(); persistEntryDraft(); renderEntry(); }
 window.setEntrySubject = setEntrySubject;
-function setEntryBoard(b) { state.entryBoard = b; renderEntry(); }
+function setEntryBoard(b) { state.entryBoard = b; restoreEntryBook(); persistEntryDraft(); renderEntry(); }
 window.setEntryBoard = setEntryBoard;
 
 // --- 书目胶囊交互 ---
 function selectBook(name) {
   state.entryBook = name;
+  state.entryBooks[bookKey(state.entryBoard, state.entrySubject)] = name;
+  persistEntryDraft();
   state.bookEditMode = false;
   renderEntry();
   (name ? $('#entry-num') : $('#entry-source'))?.focus();
@@ -1795,27 +1996,22 @@ function toggleBookEdit() {
 window.toggleBookEdit = toggleBookEdit;
 
 function addItem() {
-  const note = $('#entry-note').value.trim();
-  const books = state.books[bookKey(state.entryBoard, state.entrySubject)] || [];
-  const book = books.includes(state.entryBook) ? state.entryBook : null;
-  let source;
-  if (book) {
-    const num = $('#entry-num')?.value.trim();
-    if (!num) { $('#entry-num')?.focus(); return; }
-    source = `${book} ${num}`;
-  } else {
-    source = $('#entry-source')?.value.trim();
-    if (!source) { $('#entry-source')?.focus(); return; }
-  }
-  const item = createItem(state.entrySubject, source, note, todayStr(), state.entryBoard);
-  state.items.push(item);
-  saveItems(state.items);
-  state.justAdded = item.id; // 新行以滑入+余晖入场
+  let sources;
+  try { sources = entrySources(); } catch (error) { showToast(error.message); return; }
+  if (!sources.length) { ($('#entry-num') || $('#entry-source'))?.focus(); return; }
+  const fresh = sources.filter(source => !entryDuplicate(source));
+  if (!fresh.length) { renderEntryPreview(); showToast('这些题目已在题库中'); return; }
+  const added = fresh.map(source => createItem(state.entrySubject, source, state.entryDraft.note, todayStr(), state.entryBoard));
+  state.items.push(...added);
+  if (!saveItems(state.items)) { state.items.splice(-added.length); return; }
+  state.entryDraft = { source: '', num: '', note: '', batch: state.entryDraft.batch };
+  persistEntryDraft();
+  state.justAdded = added[added.length-1].id;
   render();
-  showToast(`已添加，${displayDate(item.dueDate)} 首次复习`);
-  // 连续录入同一本书：保持书目选中，只清空并聚焦题号
+  showToast(`已添加 ${added.length} 题，明天首次复习${sources.length > fresh.length ? '；已跳过重复题' : ''}`);
   ($('#entry-num') || $('#entry-source'))?.focus();
 }
+
 window.addItem = addItem;
 
 function deleteItem(id, evt) {
@@ -1867,36 +2063,39 @@ function renderLibrary() {
 
   let html = `<div class="screen-head">
     <div class="screen-title">题库</div>
-    <div class="screen-sub">共 ${state.items.length} 题 · 循环中 ${state.items.filter(i => i.status === 'learning').length} · 已毕业 ${state.items.filter(i => i.status === 'graduated').length}</div>
+    <div class="screen-sub">共 ${state.items.length} 题 · 循环中 ${state.items.filter(i => i.status === 'learning').length} · 维护复习 ${state.items.filter(i => i.status === 'graduated').length}</div>
   </div>`;
   html += `<div class="card">
     <input type="text" class="form-input mb8" placeholder="搜索出处 / 备注" value="${escapeHtml(state.libSearch)}"
       oninput="state.libSearch=this.value; renderLibraryListOnly()">
-    <div class="row">
-      <select class="form-input flex1" onchange="state.libBoard=this.value; state.libAnim=1; renderLibrary()">
+    <div class="library-filters">
+      <select aria-label="题目类型" class="form-input flex1" onchange="state.libBoard=this.value; state.libAnim=1; renderLibrary()">
         <option value="all">全部类型</option>
         ${Object.entries(BOARDS).map(([k, label]) =>
           `<option value="${k}" ${k === state.libBoard ? 'selected' : ''}>${label}</option>`).join('')}
       </select>
-      <select class="form-input flex1" onchange="state.libSubject=this.value; state.libAnim=1; renderLibrary()">
+      <select aria-label="科目" class="form-input flex1" onchange="state.libSubject=this.value; state.libAnim=1; renderLibrary()">
         <option value="all">全部科目</option>
         ${subjects.map(s => `<option value="${escapeHtml(s)}" ${s === state.libSubject ? 'selected' : ''}>${escapeHtml(s)}</option>`).join('')}
       </select>
-      <select class="form-input flex1" onchange="state.libStatus=this.value; state.libAnim=1; renderLibrary()">
+      <select aria-label="复习状态" class="form-input flex1" onchange="state.libStatus=this.value; state.libAnim=1; renderLibrary()">
         <option value="all">全部状态</option>
         <option value="learning" ${state.libStatus === 'learning' ? 'selected' : ''}>循环中</option>
-        <option value="graduated" ${state.libStatus === 'graduated' ? 'selected' : ''}>已毕业</option>
+        <option value="graduated" ${state.libStatus === 'graduated' ? 'selected' : ''}>维护复习</option>
       </select>
     </div>
   </div>
-  <div class="section-title">共 ${list.length} 题</div>
+  <div class="section-title" id="lib-count" aria-live="polite">共 ${list.length} 题</div>
   <div class="card ${state.libAnim ? 'list-in' : ''}" id="lib-list">${renderLibraryList(list, today)}</div>`;
   setMain(html);
   state.libAnim = 0; // 刷新动画只在筛选切换时播一次
 }
 function renderLibraryListOnly() {
   const el = $('#lib-list');
-  if (el) el.innerHTML = renderLibraryList(libFilteredItems(), todayStr());
+  const list = libFilteredItems();
+  if (el) el.innerHTML = renderLibraryList(list, todayStr());
+  const count = $('#lib-count');
+  if (count) count.textContent = `共 ${list.length} 题`;
 }
 window.renderLibraryListOnly = renderLibraryListOnly;
 
@@ -1926,14 +2125,14 @@ function renderLibraryList(list, today) {
       </div>`;
     }
     return `<div class="lib-item" data-id="${i.id}">
-      <div class="lib-main" onclick="toggleLibItem('${i.id}')">
+      <div class="lib-main" role="button" tabindex="0" aria-expanded="${expanded}" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleLibItem('${i.id}')}" onclick="toggleLibItem('${i.id}')">
         <div class="flex1">
           <div>${escapeHtml(i.source)}</div>
           <div class="task-meta">
             <span class="tag board-${i.board}">${BOARDS[i.board]}</span>
             <span class="tag subj">${escapeHtml(i.subject)}</span>
             ${isGrad
-              ? `<span class="tag grad">已毕业</span><span class="tag">抽查 ${displayDate(i.dueDate)}</span>`
+              ? `<span class="tag grad">维护复习</span><span class="tag">抽查 ${displayDate(i.dueDate)}</span>`
               : `<span class="tag">档位 ${i.intervalIndex + 1}/${seq.length}</span><span class="tag ${late ? 'late' : ''}">${late ? `逾期 ${late} 天` : displayDate(i.dueDate)}</span>`}
           </div>
         </div>
@@ -2006,16 +2205,21 @@ function renderStats() {
     <div class="screen-title">统计</div>
     <div class="screen-sub">学习进度一览</div>
   </div>`;
+  const difficult = state.items.map(item => ({item, misses: item.history.slice(-5).filter(h => h.rating === '×').length}))
+    .filter(entry => entry.misses >= 2).sort((a,b) => b.misses-a.misses).slice(0,5);
+  html += `<div class="card"><div class="section-title" style="margin-top:0">优先回看</div>
+    ${difficult.length ? difficult.map(({item,misses}) => `<button class="weak-item" onclick="openLibraryItem('${item.id}')"><span>${escapeHtml(item.source)}<small>最近 ${Math.min(5,item.history.length)} 次有 ${misses} 次 ×</small></span><span>查看</span></button>`).join('') : '<p class="small">暂无反复出错的题目。最近 5 次复习中至少 2 次 × 的题会出现在这里。</p>'}</div>`;
+  html += `<div class="card"><div class="section-title" style="margin-top:0">未来 7 天已排期</div><div class="week-plan">${Array.from({length:7},(_,n) => {const day=addDaysStr(today,n+1);return `<div><span>${day.slice(5).replace('-','/')}</span><strong>${scheduledCountOn(state.items,day)}</strong><span>题</span></div>`;}).join('')}</div><p class="tiny">仅统计当前排期，后续评分会改变题量。</p></div>`;
   html += `<div class="stat-tiles">
     <div class="stat-tile hot"><span class="tico">${ICON_CHECK}</span><div class="tval"><span class="cnum">${doneToday}</span></div><div class="tlbl">今日完成</div></div>
     <div class="stat-tile"><span class="tico">${ICON_FLAME}</span><div class="tval"><span class="cnum">${streak}</span><small>天</small></div><div class="tlbl">连续学习</div></div>
     <div class="stat-tile"><span class="tico">${ICON_LOOP}</span><div class="tval"><span class="cnum">${totalL}</span></div><div class="tlbl">循环中</div></div>
-    <div class="stat-tile"><span class="tico">${ICON_GRADCAP}</span><div class="tval"><span class="cnum">${totalG}</span></div><div class="tlbl">已毕业</div></div>
+    <div class="stat-tile"><span class="tico">${ICON_GRADCAP}</span><div class="tval"><span class="cnum">${totalG}</span></div><div class="tlbl">维护复习</div></div>
   </div>`;
   html += `<div class="card">
     <div class="section-title" style="margin-top:0">各科目题量</div>
     <table class="stat-table">
-      <tr><th>科目</th><th class="r">循环中</th><th class="r">已毕业</th><th class="r">合计</th></tr>
+      <tr><th>科目</th><th class="r">循环中</th><th class="r">维护复习</th><th class="r">合计</th></tr>
       ${rows}
       <tr><td><b>合计</b></td><td class="r"><b>${totalL}</b></td><td class="r"><b>${totalG}</b></td><td class="r"><b>${totalL + totalG}</b></td></tr>
     </table>
@@ -2030,7 +2234,7 @@ function renderStats() {
   html += `<div class="card">
     <div class="section-title" style="margin-top:0">母题 / 过去问</div>
     <table class="stat-table">
-      <tr><th>类型</th><th class="r">循环中</th><th class="r">已毕业</th><th class="r">合计</th></tr>
+      <tr><th>类型</th><th class="r">循环中</th><th class="r">维护复习</th><th class="r">合计</th></tr>
       ${boardRows}
     </table>
   </div>`;
@@ -2057,7 +2261,7 @@ function renderStats() {
     <div class="tiny mt12 center">最近 30 天共完成 ${counts.reduce((a, b) => a + b, 0)} 题次 · 单日最高 ${Math.max(0, ...counts)} 题</div>
   </div>`;
 
-  // 最近 7 天 ○ 率（按科目）
+  // 最近 7 天自评熟练率（按科目）
   const weekStart = addDaysStr(today, -6);
   const rateRows = subjects.map(s => {
     const ratings = state.items.filter(i => i.subject === s)
@@ -2072,9 +2276,9 @@ function renderStats() {
     return `<tr><td>${escapeHtml(s)}</td><td class="r"><b>${p}%</b><span class="mini-meter"><i style="width:${p}%"></i></span></td><td class="r">${good}/${ratings.length}</td></tr>`;
   }).join('');
   html += `<div class="card">
-    <div class="section-title" style="margin-top:0">最近 7 天 ○ 率</div>
+    <div class="section-title" style="margin-top:0">最近 7 天自评熟练率</div>
     <table class="stat-table">
-      <tr><th>科目</th><th class="r">○ 率</th><th class="r">○/全部</th></tr>
+      <tr><th>科目</th><th class="r">熟练率</th><th class="r">○/全部</th></tr>
       ${rateRows}
     </table>
   </div>`;
@@ -2185,6 +2389,9 @@ function clearAllData() {
   localStorage.removeItem(KEYS.FIX_ESSENCE_FLAG);
   localStorage.removeItem(FIX_SUBJECT_MATH_FLAG);
   localStorage.removeItem(KEYS.BOOKS);
+  localStorage.removeItem(KEYS.ENTRY_DRAFT);
+  state.entryDraft = { source: '', num: '', note: '', batch: false };
+  state.entryBooks = {};
   localStorage.removeItem(BOOKS_SEED_FLAG);
   state.items = [];
   state.books = {};
@@ -2233,13 +2440,15 @@ function mergeItems(a, b) {
   const ta = Date.parse(a.updatedAt || '') || 0;
   const tb = Date.parse(b.updatedAt || '') || 0;
   const base = tb > ta ? b : a; // 出处/备注等可编辑字段取较新一方
+  const removedReviewIds = [...new Set([...(a.removedReviewIds || []), ...(b.removedReviewIds || [])])];
   const merged = {
     ...base,
     addedDate: (a.addedDate && b.addedDate)
       ? (a.addedDate < b.addedDate ? a.addedDate : b.addedDate)
       : (a.addedDate || b.addedDate),
     legacy: a.legacy || b.legacy,
-    history: mergeHistories(a.history, b.history),
+    history: mergeHistories(a.history, b.history).filter(h => !removedReviewIds.includes(h.id)),
+    removedReviewIds,
     updatedAt: (tb > ta ? b.updatedAt : a.updatedAt) || new Date().toISOString(),
   };
   return recomputeItem(merged);
@@ -2267,6 +2476,8 @@ function setSyncStatus(msg, busy = false) {
   state.sync.status = msg;
   state.sync.busy = busy;
   if (state.view === 'data') renderData();
+  const indicator = $('.sync-indicator');
+  if (indicator) indicator.textContent = syncLabel();
 }
 function scheduleCloudPush() {
   if (!getSupabase() || !state.sync.user) return;
@@ -2390,7 +2601,7 @@ window.pushCloudData = pushCloudData;
 const LEARNING_OS_FUNCTION = 'learning-os-sheet-sync-v6';
 const LEARNING_OS_RETRYABLE = new Set(['pending', 'unmatched', 'ambiguous', 'error']);
 const LEARNING_OS_AUTOMATIC = new Set(['pending', 'error']);
-const LEARNING_OS_UNDO_DELAY_MS = 5200;
+const LEARNING_OS_UNDO_DELAY_MS = 6000;
 const LEARNING_OS_REQUEST_TIMEOUT_MS = 15000;
 const LEARNING_OS_RETRY_DELAY_MS = 15000;
 const LEARNING_OS_STUCK_AFTER_MS = 70000;
@@ -2428,6 +2639,7 @@ function learningOsMatchedItemCount() {
 }
 
 function learningOsReadyAt(event) {
+  if (sessionUndoInfo?.eventId && sessionUndoInfo.eventId === event?.id) return Infinity;
   const createdAt = Date.parse(event?.createdAt || '');
   return Number.isFinite(createdAt) ? createdAt + LEARNING_OS_UNDO_DELAY_MS : 0;
 }
@@ -2850,6 +3062,7 @@ function init() {
   initStandaloneShell();
   state.items = fixMathSubjectNameOnce(fixEssenceMidoriOnce(loadAndMigrateItems()));
   state.books = loadBooks();
+  restoreEntryDraft();
   initLearningOsAutoRecovery();
   suppressCloudSync = true;
   saveItems(state.items); // 持久化迁移/补全结果
