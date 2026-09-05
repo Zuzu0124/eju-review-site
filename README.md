@@ -102,6 +102,16 @@ verification, so those fields remain blank.
 iPhone Safari, soft-keyboard behavior and mobile animation rendering still need
 device verification; the regression suite does not provide a layout engine.
 
+## Mist white and jade (2026-09-05.3)
+
+- Implements the selected B design: mist-white background, pale jade task surface,
+  restrained green actions, 16px cards, subtle borders and a matching dark theme.
+- Shared tokens cover every EJU view, charts, expanded countdown and browser chrome.
+  iOS safe-area spacing and the existing responsive layout are preserved.
+- Questions fade in place over 280ms without overlapping old text. Session controls
+  stay mounted; navigation uses a soft fade and reduced-motion preferences still apply.
+- Existing scheduling, saved records and synchronization behavior are unchanged.
+
 ### Regression checks
 
 The application remains buildless. The test-only dependency can be installed
