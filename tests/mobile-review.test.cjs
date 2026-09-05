@@ -14,7 +14,7 @@ function app(storage = new Map()) {
   const { document } = parseHTML(html);
   const timers = new Map();
   let nextTimer = 1;
-  const window = { __EJU_TEST__: true, addEventListener() {}, scrollTo() {} };
+  const window = { __EJU_TEST__: true, scrollY: 0, addEventListener() {}, scrollTo({top}) { this.scrollY = top; } };
   const context = vm.createContext({ document, window, console,
     navigator: { onLine: true }, performance: { now: () => 0 },
     requestAnimationFrame: () => 0,
@@ -152,7 +152,7 @@ test('last-card undo remains on summary, stays unsent while undoable and cannot 
   assert.equal(a.run('merged.history.length'), 0);
   assert.equal(a.run('merged.dueDate'), a.run('todayStr()'));
   a.run(`sessionRate('○');`);a.flush(110);
-  a.run(`var finalEvent=state.items[0].history[0];endSession();`);a.flush(280);
+  a.run(`var finalEvent=state.items[0].history[0];endSession();`);a.flush(220);
   assert.equal(a.run('learningOsPastUndoWindow(finalEvent,Date.now()+60000)'), true);
 });
 
@@ -179,6 +179,7 @@ test('empty states distinguish onboarding from a scheduled rest day and filters 
 test('all five pages render, and focused mobile controls retain semantic labels', () => {
   const a = app();
   a.run(`state.items=[createItem('数学','很长的书名'.repeat(15),'提示',addDaysStr(todayStr(),-1))];`);
+  a.run('render()');
   for (const view of ['review','entry','library','stats','data']) {
     a.run(`navigate('${view}')`);
     assert.ok(a.document.getElementById('main').textContent.trim());
@@ -188,4 +189,42 @@ test('all five pages render, and focused mobile controls retain semantic labels'
   assert.ok(a.document.querySelector('label[for="entry-note"]'));
   a.run(`navigate('library')`);
   assert.equal(a.document.querySelectorAll('.library-filters select[aria-label]').length, 3);
+});
+
+test('switching tabs restores scroll and reselecting the current tab keeps unsaved form DOM', () => {
+  const a = app();
+  a.run(`render();window.scrollY=240;navigate('entry');window.scrollY=480;navigate('review');`);
+  assert.equal(a.run('window.scrollY'),240);
+  a.run(`navigate('entry');`);
+  assert.equal(a.run('window.scrollY'),480);
+  const input=a.document.getElementById('entry-note');
+  a.run(`navigate('entry');`);
+  assert.equal(a.document.getElementById('entry-note'),input);
+  assert.equal(a.run('window.scrollY'),0);
+});
+
+test('card changes preserve session header and rating buttons while closing hints', () => {
+  const a=app();
+  a.run(`state.items=[1,2].map(n=>createItem('数学','本 '+n,'提示',addDaysStr(todayStr(),-1)));startSession();`);
+  const header=a.document.querySelector('.session-top');
+  const button=a.document.querySelector('.session-rate button');
+  a.document.querySelector('#session-root .review-hint').setAttribute('open','');
+  a.run(`sessionRate('○');`);a.flush(110);
+  assert.equal(a.document.querySelector('.session-top'),header);
+  assert.equal(a.document.querySelector('.session-rate button'),button);
+  assert.equal(button.disabled,false);
+  assert.equal(a.document.querySelector('#session-card .review-hint').hasAttribute('open'),false);
+  assert.match(a.document.querySelector('.session-count').textContent,/2\/2/);
+});
+
+test('reduced motion follows the system and book creation remains inline without losing drafts', () => {
+  const a=app();
+  a.run(`window.matchMedia=()=>({matches:true});`);
+  assert.equal(a.run('prefersReducedMotion()'),true);
+  a.run(`window.matchMedia=()=>({matches:false});state.view='entry';state.entryDraft.note='保留备注';render();addBook();`);
+  assert.ok(a.document.getElementById('new-book-name'));
+  a.run(`state.bookNameDraft='新教材';commitBook();`);
+  assert.equal(a.run('state.entryBook'),'新教材');
+  assert.equal(a.run('state.entryDraft.note'),'保留备注');
+  assert.equal(a.document.getElementById('new-book-name'),null);
 });
