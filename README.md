@@ -82,6 +82,26 @@ verification, so those fields remain blank.
 - Statistics surface repeated difficulties and the next seven days of scheduled
   work before inventory totals. These are review metrics, not exam-score estimates.
 
+## Design and motion refinement (2026-09-05.2)
+
+- Warm graphite task surface, consistent typography and spacing, and a floating
+  bottom navigation that retains safe-area padding and the iOS standalone shell.
+- Countdown and sync information follow the main task. List-level quick ratings,
+  optional entry notes, inventory statistics and advanced data actions expand on
+  demand. Full and small-group session controls remain on the task surface.
+- Tab navigation restores each page's scroll position; tapping the active tab
+  scrolls to the top without rebuilding its form. New book names are entered in
+  the page instead of a native prompt.
+- A review session keeps its header and rating buttons mounted between questions;
+  only the card changes. Transitions use short, consistent distances and durations,
+  and both JavaScript and CSS honor the system's reduced-motion preference.
+- The main text/CTA color pairs were checked numerically for contrast. The isolated
+  regression suite now includes scroll restoration, persistent session controls,
+  inline book entry and reduced motion (14 passing checks).
+
+iPhone Safari, soft-keyboard behavior and mobile animation rendering still need
+device verification; the regression suite does not provide a layout engine.
+
 ### Regression checks
 
 The application remains buildless. The test-only dependency can be installed

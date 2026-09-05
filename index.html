@@ -721,6 +721,181 @@ summary:focus-visible, .lib-main:focus-visible { outline: 2px solid var(--accent
   *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
 
+
+/* ---------- 2026-09-05.2：暖石墨、清晰层次、连贯动效 ---------- */
+:root {
+  --bg: #f3f2ef; --card: #fff; --surface-2: #eeede9; --line: #e2e0da;
+  --text: #282723; --muted: #706d65; --accent: #b74a24; --btn-bg: #b74a24;
+  --accent-soft: #f8eae2; --ring: rgba(183,74,36,.28); --radius: 16px;
+  --shadow-sm: 0 2px 4px -2px rgba(32,29,24,.09);
+  --shadow-md: 0 12px 36px -24px rgba(32,29,24,.3);
+  --hero: #292925; --hero-text: #faf8f3; --hero-muted: #c9c5ba;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg:#121311; --card:#1c1e1a; --surface-2:#262923; --line:#34382f;
+    --text:#f0efe9; --muted:#aaa99f; --accent:#edab87; --btn-bg:#b74a24;
+    --accent-soft:#33281f; --ring:rgba(237,171,135,.3); --hero:#252921;
+    --hero-text:#faf8f3; --hero-muted:#c9c5ba; }
+}
+body::before { display:none; }
+.app { padding-bottom:calc(112px + env(safe-area-inset-bottom)); }
+.header { padding-top:20px; padding-bottom:8px; }
+.brand { gap:9px; }
+.brand-mark { width:30px; height:30px; border-radius:9px; background:var(--accent); box-shadow:none; }
+.brand-mark svg { width:17px; height:17px; }
+.app-title { font-family:var(--font-sans); font-size:14px; font-weight:650; }
+.today-date { font-family:var(--font-sans); color:var(--muted); }
+.screen-head { margin:18px 2px 20px; }
+.screen-title { font-family:var(--font-sans); font-size:28px; font-weight:700; letter-spacing:-.04em; }
+.screen-sub { margin-top:6px; line-height:1.6; }
+.card { padding:18px 16px; border-color:var(--line); box-shadow:var(--shadow-sm); margin-bottom:14px; }
+.section-title { margin:24px 2px 12px; color:var(--text); font-weight:650; }
+.btn { border-radius:12px; box-shadow:none; transition:transform .14s var(--ease-out),background .18s ease,box-shadow .18s ease; touch-action:manipulation; }
+.btn:hover { filter:none; box-shadow:none; }
+.btn:active { transform:scale(.98); }
+.btn.secondary { background:transparent; }
+.form-input { border-radius:12px; border-color:var(--line); background:var(--card); }
+.form-input:focus { box-shadow:0 0 0 3px var(--ring); }
+.review-hero { background:var(--hero); color:var(--hero-text); border:1px solid transparent; border-radius:24px; padding:22px 20px 20px; box-shadow:0 12px 24px -18px rgba(24,25,20,.55); }
+.hero-kicker { color:var(--hero-muted); font-size:13px; margin-bottom:12px; }
+.hero-line { gap:12px; margin-bottom:20px; }
+.remaining-num { color:var(--hero-text); font-size:52px; letter-spacing:-.045em; }
+.remaining-label { color:var(--hero-muted); font-size:14px; margin-left:10px; }
+.review-hero .tiny { color:var(--hero-muted); }
+.review-hero .progress { background:rgba(255,255,255,.12); height:4px; }
+.review-hero .progress i { background:#e8a781; }
+.review-hero .cta { min-height:54px; margin:22px 0 12px; border-radius:14px; background:#b74a24; box-shadow:0 3px 0 rgba(0,0,0,.08); font-size:16px; letter-spacing:.01em; }
+.review-hero .cta:active { transform:scale(.985); }
+.cta-count { background:rgba(0,0,0,.12) !important; }
+.review-options { gap:8px; }
+.review-options.single { grid-template-columns:1fr; }
+.review-options .form-input,.review-options .btn.secondary { background:rgba(255,255,255,.045); border-color:rgba(255,255,255,.16); color:var(--hero-text); font-size:14px; }
+.review-options option { color:var(--text); background:var(--card); }
+.review-options .form-input { min-height:44px; padding-block:8px; color-scheme:dark; }
+.review-hero .chips { gap:6px; margin-top:16px; }
+.review-hero .chip { background:transparent; color:var(--hero-muted); padding:0; border-radius:0; }
+.review-hero .chip + .chip::before { content:'·'; margin-right:6px; }
+.review-context { margin:14px 2px 0; }
+.exam-compact { border:0; }
+.exam-compact summary { min-height:40px; }
+.exam-compact summary .tiny { font-size:12px; }
+.sync-indicator { min-height:36px; padding-block:6px; }
+.next-plan { padding:8px 2px 4px; }
+.group-title { margin-top:24px; font-size:15px; }
+.sub-label { margin-block:12px 8px; color:var(--muted); }
+.task-card { padding:16px; border-radius:16px; box-shadow:none; margin-bottom:10px; }
+.task-source { font-size:16px; font-weight:600; line-height:1.5; }
+.task-meta { gap:6px; }
+.tag { background:transparent; padding:0; border-radius:0; color:var(--muted); font-size:12px; white-space:normal; }
+.tag.board-mondai,.tag.board-kakomon,.tag.subj { background:transparent; }
+.tag + .tag::before { content:'·'; margin-right:6px; color:var(--muted); }
+.tag.late { color:var(--bad); background:transparent; }
+.quick-rating { margin-top:12px; border-top:1px solid var(--line); }
+.quick-rating summary { display:flex; align-items:center; justify-content:space-between; min-height:44px; color:var(--muted); font-size:13px; cursor:pointer; list-style:none; }
+.quick-rating summary::-webkit-details-marker { display:none; }
+.quick-rating[open] summary span { transform:rotate(45deg); }
+.quick-rating summary span { font-size:18px; transition:transform .18s ease; }
+.quick-rating[open] .rate-row { animation:detailIn .2s var(--ease-out); }
+.review-hint { margin-top:12px; }
+.review-hint summary { font-size:13px; }
+.rating-guide { line-height:1.6; }
+.nav-bar { width:calc(100% - 24px); max-width:596px; bottom:calc(10px + env(safe-area-inset-bottom)); border:1px solid var(--line); border-radius:22px; padding-bottom:0; background:var(--glass); box-shadow:0 8px 28px -14px rgba(20,22,16,.3); }
+.nav-btn { min-height:64px; padding:8px 0; font-size:12px; }
+.nav-btn .ico { padding:4px 12px; border-radius:12px; }
+.nav-btn.active::before { display:none; }
+.nav-btn.active .ico { background:var(--accent-soft); }
+.nav-btn.active .ico svg { animation:none; transform:none; }
+.nav-btn .ico svg { width:20px; height:20px; }
+.nav-btn .badge { top:3px; font-size:10px; box-shadow:0 0 0 2px var(--bg); }
+.entry-card { border-top:1px solid var(--line); background:var(--card); }
+.form-label { color:var(--text); margin-top:20px; }
+.subject-pick.seg { padding:4px; border-radius:14px; }
+.subject-pick button { border-radius:12px; }
+.subject-pick button.on,.book-chip.on { animation:none; }
+.book-chips { gap:8px; }
+.book-chip { border-radius:12px; font-size:14px; padding-inline:12px; }
+.book-chip.ghost { border:0; color:var(--muted); font-size:13px; padding-inline:6px; }
+.book-chip.on { box-shadow:none; }
+.schedule-help { margin-top:4px; }
+.schedule-help summary { font-size:12px; padding-block:8px; min-height:36px; }
+.entry-note-panel { margin-top:16px; border-top:1px solid var(--line); }
+.entry-note-panel summary { display:flex; align-items:center; justify-content:space-between; min-height:48px; cursor:pointer; font-size:14px; color:var(--muted); }
+.entry-note-panel textarea { margin-bottom:8px; }
+.book-composer { padding:12px; border-radius:12px; background:var(--surface-2); animation:detailIn .2s var(--ease-out); }
+.book-composer .form-label { margin-top:0; }
+.entry-card > .btn.block { min-height:50px; margin-top:18px; }
+.lib-detail { animation-duration:.2s; }
+.stats-secondary > summary,.advanced-data > summary { cursor:pointer; min-height:48px; display:flex; align-items:center; font-size:14px; color:var(--muted); }
+.stats-secondary { margin-top:8px; }
+.stats-secondary[open] > summary { margin-bottom:8px; }
+.stat-tile { border-radius:16px; box-shadow:none; }
+.stat-tile.hot { background:var(--card); }
+.weak-item:last-child { border-bottom:0; }
+.week-plan { padding-block:8px; }
+.week-plan strong { padding-block:10px; font-family:var(--font-display); }
+.session { background:var(--bg); }
+.session::before { display:none; }
+.session-top { padding:12px 16px; gap:14px; }
+.session-close { border-color:var(--line); background:transparent; box-shadow:none; }
+.session-progress { height:4px; }
+.session-progress i { background:var(--accent); transition-duration:.28s; }
+.session-body { padding:12px 16px; }
+.session-card { margin:12px 0 auto; border-radius:22px; padding:24px 20px; min-height:180px; box-shadow:var(--shadow-sm); }
+.session-source { font-size:22px; font-weight:600; line-height:1.5; }
+.session-card .task-meta { margin-top:14px; }
+.recall-guide { margin-top:24px; }
+.session-foot { border:0; padding-top:14px; background:var(--bg); }
+.session-foot .rating-guide { margin-bottom:12px; }
+.rate-btn,.rate-btn.xl { min-height:92px; padding:12px 4px; background:var(--card); border-color:var(--line); border-radius:16px; gap:6px; }
+.rate-btn .mark,.rate-btn.xl .mark { font-size:24px; }
+.rate-btn .lbl,.rate-btn.xl .lbl { color:var(--text); font-size:13px; font-weight:600; }
+.rate-next { color:var(--muted); }
+.rate-btn:active { transform:scale(.97); filter:none; }
+.rate-btn.pressed::after { animation-duration:.2s; border-width:1px; }
+.rate-btn.pressed .mark { animation:none; }
+.session-undo { min-height:44px; margin-top:8px; }
+.session-card.swap-in,.session-card.swap-in-rev { animation-duration:.26s; }
+@keyframes swapIn { from { opacity:0; transform:translateX(20px) scale(.99); } to { opacity:1; transform:none; } }
+@keyframes swapInRev { from { opacity:0; transform:translateX(-20px) scale(.99); } to { opacity:1; transform:none; } }
+.session-card.ghost-out { animation-duration:.22s; }
+@keyframes ghostOut { to { opacity:0; transform:translateX(-20px) scale(.99); } }
+.session.enter { animation-duration:.3s; }
+.session.leave { animation-duration:.22s; }
+.session-summary > * { animation-duration:.32s; animation-delay:0s !important; }
+.success-mark .ring { animation-duration:.5s; }
+.success-mark .tick { animation-duration:.25s; animation-delay:.25s; }
+.confetti i { animation-duration:.5s; animation-delay:.25s; width:4px; height:4px; }
+.toast { border-radius:16px; box-shadow:var(--shadow-md); animation-duration:.22s; font-size:14px; }
+.view-enter > *,.slide-l > *,.slide-r > * { animation-duration:.22s; animation-delay:0s !important; }
+@keyframes viewEnter { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:none; } }
+@keyframes slideFromRight { from { opacity:0; transform:translateX(12px); } to { opacity:1; transform:none; } }
+@keyframes slideFromLeft { from { opacity:0; transform:translateX(-12px); } to { opacity:1; transform:none; } }
+.bar { animation-duration:.36s; animation-delay:0s !important; }
+.lib-item.row-in { animation-duration:.25s,.7s; }
+.empty { background:var(--card); border:1px solid var(--line); border-radius:24px; padding:28px 20px; margin-top:16px; }
+.empty .calm-ico { width:36px; height:36px; margin-bottom:14px; }
+.empty-title { font-size:20px; }
+.empty > .btn.secondary { border:0; font-weight:500; }
+.session-summary .empty-title { background:none; }
+@media (max-width:360px) {
+  .review-hero { padding:20px 16px 16px; }
+  .screen-title { font-size:26px; }
+  .remaining-num { font-size:46px; }
+  .review-options .btn { padding-inline:10px; }
+  .session-card { padding:20px 16px; }
+  .session-source { font-size:20px; }
+  .nav-bar { width:calc(100% - 16px); }
+}
+@media (max-height:500px) and (orientation:landscape) {
+  .session-card { margin-top:0; min-height:0; padding:16px; }
+  .session-top { padding-block:4px; }
+  .rate-btn.xl { min-height:58px; padding:6px 4px; }
+  .session-foot { padding-top:4px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  *,*::before,*::after { animation-duration:.01ms !important; animation-delay:0ms !important; transition-duration:.01ms !important; scroll-behavior:auto !important; }
+}
+
 </style>
 </head>
 <body>
@@ -754,7 +929,7 @@ summary:focus-visible, .lib-main:focus-visible { outline: 2px solid var(--accent
 <script>
 'use strict';
 // 应用版本号：每次发布更新（数据页底部可见，便于确认设备上跑的是哪一版）
-const APP_VERSION = '2026-09-05.1';
+const APP_VERSION = '2026-09-05.2';
 /* ============================================================
  * EJU 间隔复习 — 单文件应用
  * 数据: localStorage（eju.items.v2）；旧版 eju.items.v1 自动迁移且保留不动
@@ -1297,6 +1472,10 @@ function groupBySubject(list) {
 // ---------- 应用状态 ----------
 const state = {
   view: 'review',
+  scrollPositions: {},
+  seenViews: new Set(),
+  bookComposer: false,
+  bookNameDraft: '',
   items: [],
   entryBoard: 'mondai',
   entrySubject: SUBJECTS[0],
@@ -1362,23 +1541,23 @@ function scrollCurrentViewToTop(behavior = 'auto') {
 }
 function navigate(view) {
   const from = state.view;
-  // 点击当前已激活的标签：不重放入场动画，滚回顶部即可
   if (view === from) {
-    render();
     scrollCurrentViewToTop(prefersReducedMotion() ? 'auto' : 'smooth');
     return;
   }
+  const scroller = document.documentElement.classList.contains('standalone-shell') ? $('.app') : window;
+  state.scrollPositions[from] = scroller === window ? (window.scrollY || 0) : scroller.scrollTop;
   state.view = view;
   render();
-  scrollCurrentViewToTop();
-  // 方向感知：按标签顺序决定滑入方向
+  const top = state.scrollPositions[view] || 0;
+  try { scroller?.scrollTo({ top, behavior: 'auto' }); } catch (e) {}
   const a = VIEW_ORDER.indexOf(from), b = VIEW_ORDER.indexOf(view);
   afterViewRender(a >= 0 && b >= 0 ? (b > a ? 'l' : 'r') : null);
 }
-// ---------- 视图切换动效（仅切换标签/首次加载时触发，评级等操作不重放） ----------
 function prefersReducedMotion() {
-  return false; // 按用户要求：动效始终开启，不跟随系统"减弱动态效果"
+  return !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 }
+
 function animateMainEnter(dir) {
   const m = $('#main');
   if (!m) return;
@@ -1389,7 +1568,7 @@ function animateCountUp(selector = '.summary-nums .num') {
   $$(selector).forEach(el => {
     const target = parseInt(el.textContent, 10);
     if (!Number.isFinite(target) || target <= 0) return;
-    const dur = 620, start = performance.now();
+    const dur = 360, start = performance.now();
     el.textContent = '0';
     const tick = now => {
       const p = Math.min(1, (now - start) / dur);
@@ -1400,11 +1579,13 @@ function animateCountUp(selector = '.summary-nums .num') {
   });
 }
 function afterViewRender(dir) {
+  const firstVisit = !state.seenViews.has(state.view);
+  state.seenViews.add(state.view);
   if (prefersReducedMotion()) return;
   animateMainEnter(dir);
-  if (state.view === 'review') animateCountUp();
-  if (state.view === 'stats') animateCountUp('.stat-tile .cnum');
+  if (firstVisit && state.view === 'stats') animateCountUp('.stat-tile .cnum');
 }
+
 function updateBadge() {
   const today = todayStr();
   const { overdue, dueToday, gradChecks } = getDueTasks(state.items, today);
@@ -1448,21 +1629,22 @@ function renderReview() {
 
   const pct = total ? Math.round(done / total * 100) : 0;
   let html = `<div class="screen-head"><div class="screen-title">今日复习</div></div>`;
-  html += ejuCountdownCardHtml();
-  html += `<button class="sync-indicator" onclick="navigate('data')">${escapeHtml(syncLabel())}</button>`;
+
   if (remaining > 0 || done > 0) {
     html += `<section class="review-hero" aria-label="今日复习进度">
+      <div class="hero-kicker">今日任务</div>
       <div class="hero-line"><div><span class="remaining-num">${remaining}</span><span class="remaining-label">题待复习</span></div>
         <span class="tiny">已完成 ${done} / ${total}</span></div>
       <div class="progress ${remaining === 0 ? 'done' : ''}" role="progressbar" aria-label="今日完成比例" aria-valuenow="${pct}" aria-valuemin="0" aria-valuemax="100"><i style="width:${pct}%"></i></div>
       ${remaining ? `<button class="cta" onclick="startSession(Infinity,state.reviewSubject)">开始复习<span class="cta-count">${selectedCount} 题</span></button>
-        <div class="review-options"><label class="sr-only" for="review-subject">复习科目</label>
+        <div class="review-options ${selectedCount <= 5 ? 'single' : ''}"><label class="sr-only" for="review-subject">复习科目</label>
         <select id="review-subject" class="form-input" onchange="state.reviewSubject=this.value;renderReview()">
           <option value="all">全部科目</option>${[...bySubj.keys()].map(subject => `<option value="${escapeHtml(subject)}" ${state.reviewSubject === subject ? 'selected' : ''}>${escapeHtml(subject)}</option>`).join('')}
-        </select><button class="btn secondary" onclick="startSession(5, state.reviewSubject)">先做 ${Math.min(5,selectedCount)} 题</button></div>` : ''}
+        </select>${selectedCount > 5 ? `<button class="btn secondary" onclick="startSession(5, state.reviewSubject)">先做 5 题</button>` : ''}</div>` : ''}
       <div class="chips">${chips}</div>
     </section>`;
   }
+  html += `<div class="review-context">${ejuCountdownCardHtml()}<button class="sync-indicator" onclick="navigate('data')">${escapeHtml(syncLabel())}</button></div>`;
   html += `<div class="next-plan tiny">明日已排期 ${tomorrowCount} 题${remaining ? ' · 不含今天尚未完成的题' : ''}</div>`;
 
   if (remaining === 0) {
@@ -1478,7 +1660,7 @@ function renderReview() {
     } else if (!state.items.length) {
       html += `<div class="empty">
         <svg class="calm-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
-        <div class="empty-title">今天没有待复习的题目</div>
+        <div class="empty-title">从一道题开始</div>
         <p>记录一道今天学过的题，明天开始复习。</p>
         <button class="btn block" onclick="navigate('entry')">添加第一题</button>
         <button class="btn secondary block mt12" onclick="navigate('data')">登录恢复数据</button>
@@ -1554,8 +1736,10 @@ function taskCard(item, today) {
       ${late ? `<span class="tag late">逾期 ${late} 天</span>` : ''}
     </div>
     ${reviewHintHtml(item)}
-    <p class="rating-guide">按看提示前的表现评分；借助提示或做错选 ×。</p>
-    <div class="rate-row">${ratingButtonsHtml(item)}</div>
+    <details class="quick-rating"><summary>记录本题复习结果<span aria-hidden="true">＋</span></summary>
+      <p class="rating-guide">按看提示前的表现评分；借助提示或做错选 ×。</p>
+      <div class="rate-row">${ratingButtonsHtml(item)}</div>
+    </details>
   </div>`;
 }
 
@@ -1658,7 +1842,7 @@ function renderSession(dir) {
   const pctDone = Math.round(rated / total * 100);
   // 卡片入场方向：评级→新卡从右滑入；撤销→原卡从左返回
   const enterClass = prefersReducedMotion() ? '' : (dir === 'back' ? 'swap-in-rev' : 'swap-in');
-  root.innerHTML = `<div class="session ${session.entered ? '' : 'enter'}">
+  const markup = `<div class="session ${session.entered ? '' : 'enter'}" role="dialog" aria-modal="true" aria-label="逐题复习">
     <div class="session-top">
       <button class="session-close" onclick="endSession()" aria-label="退出复习">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
@@ -1685,6 +1869,27 @@ function renderSession(dir) {
       <button class="session-undo ${sessionUndoInfo ? '' : 'hidden'}" onclick="sessionUndo()">撤销上一题</button>
     </div>
   </div>`;
+  const existingBody = root.querySelector('.session-body');
+  if (existingBody) {
+    const template = document.createElement('template');
+    template.innerHTML = markup;
+    const next = template.content;
+    existingBody.innerHTML = next.querySelector('.session-body').innerHTML;
+    existingBody.scrollTop = 0;
+    root.querySelector('.session-count').textContent = next.querySelector('.session-count').textContent;
+    root.querySelector('.session-progress i').style.width = `${pctDone}%`;
+    const nextButtons = next.querySelectorAll('.session-rate .rate-btn');
+    root.querySelectorAll('.session-rate .rate-btn').forEach((button, n) => {
+      button.innerHTML = nextButtons[n].innerHTML;
+      button.disabled = false;
+      button.classList.remove('pressed');
+    });
+    root.querySelector('.session-undo').classList.toggle('hidden', !sessionUndoInfo);
+  } else {
+    root.innerHTML = markup;
+  }
+  $('.app').inert = true;
+  $('.nav-bar').inert = true;
   session.entered = true;
 }
 
@@ -1703,7 +1908,7 @@ function animateCardSwap(prevPct) {
     ghost.className = oldCard.className.replace(/swap-in(-rev)?/g, '').trim() + ' ghost-out';
     ghost.style.cssText = `position:absolute;left:${r.left - br.left}px;top:${r.top - br.top}px;width:${r.width}px;margin:0;`;
     body.appendChild(ghost);
-    setTimeout(() => ghost.remove(), 520);
+    setTimeout(() => ghost.remove(), 260);
   }
   const bar = $('.session-progress i');
   if (bar && Number.isFinite(prevPct)) {
@@ -1799,11 +2004,13 @@ function endSession() {
     sessionUndoInfo = null;
     scheduleNextLearningOsSync();
     if (root) root.innerHTML = '';
+    $('.app').inert = false;
+    $('.nav-bar').inert = false;
     render();
   };
   if (shell && !prefersReducedMotion()) {
     shell.classList.add('leave');
-    setTimeout(done, 280);
+    setTimeout(done, 220);
   } else {
     done();
   }
@@ -1908,15 +2115,16 @@ function renderEntry() {
       `<button class="${s === state.entrySubject ? 'on' : ''}" onclick="setEntrySubject('${s}')">${s}</button>`).join('')}
     </div>
     <details class="schedule-help"><summary>复习如何安排？</summary><p class="tiny">明天首次复习；之后根据自评延长或缩短间隔。熟练时依次为 ${seqFor(state.entrySubject).join(' → ')} 天。</p></details>
-    <label class="form-label">书目（点选后只需输入题号）</label>
-    <div class="book-chips">
+    <label class="form-label">书目</label>
+    <div class="book-chips" aria-label="常用书目">
       ${books.map(b => `<button class="book-chip ${b === book && !state.bookEditMode ? 'on' : ''}" onclick="${state.bookEditMode ? `removeBook(${jsStr(b)})` : `selectBook(${jsStr(b)})`}">${escapeHtml(b)}${state.bookEditMode ? '<span class="bx">×</span>' : ''}</button>`).join('')}
       <button class="book-chip ${!book && !state.bookEditMode ? 'on' : ''}" onclick="selectBook(null)">手动输入</button>
       <button class="book-chip ghost" onclick="addBook()">＋ 添加书</button>
       ${books.length ? `<button class="book-chip ghost" onclick="toggleBookEdit()">${state.bookEditMode ? '完成' : '编辑'}</button>` : ''}
     </div>
+    ${state.bookComposer ? `<div class="book-composer"><label class="form-label" for="new-book-name">新书名</label><input class="form-input" id="new-book-name" placeholder="例：物理のエッセンス 赤" value="${escapeHtml(state.bookNameDraft)}" oninput="state.bookNameDraft=this.value"><div class="row mt12"><button class="btn small" onclick="commitBook()">保存书目</button><button class="btn small secondary" onclick="state.bookComposer=false;renderEntry()">取消</button></div></div>` : ''}
     ${book ? `
-    <label class="form-label" for="entry-num">题号 / 页码（书：${escapeHtml(book)}）</label>
+    <label class="form-label" for="entry-num">题号 / 页码</label>
     <input type="text" class="form-input" id="entry-num" placeholder="${state.entryDraft.batch ? '例：1, 3, 5-8' : '例: p.123 例3 / 12'}" enterkeyhint="done" value="${escapeHtml(state.entryDraft.num)}" oninput="updateEntryDraft('num',this.value)">
     <label class="batch-toggle"><input type="checkbox" ${state.entryDraft.batch ? 'checked' : ''} onchange="updateEntryDraft('batch',this.checked);renderEntry()">批量录入题号</label>
     ` : `
@@ -1924,8 +2132,9 @@ function renderEntry() {
     <input type="text" class="form-input" id="entry-source" list="source-suggest" placeholder="${placeholder}" enterkeyhint="done" value="${escapeHtml(state.entryDraft.source)}" oninput="updateEntryDraft('source',this.value)">
     <datalist id="source-suggest">${sources.map(s => `<option value="${escapeHtml(s)}">`).join('')}</datalist>
     `}
-    <label class="form-label" for="entry-note">备注（可选）</label>
-    <textarea class="form-input" id="entry-note" rows="3" placeholder="易错点、思路提示等（复习时默认折叠）" oninput="updateEntryDraft('note',this.value)">${escapeHtml(state.entryDraft.note)}</textarea>
+    <details class="entry-note-panel" ${state.entryDraft.note ? 'open' : ''}><summary>添加备注 / 易错点<span class="tiny">选填</span></summary>
+    <label class="sr-only" for="entry-note">备注（可选）</label>
+    <textarea class="form-input" id="entry-note" rows="3" placeholder="易错点、思路提示等（复习时默认折叠）" oninput="updateEntryDraft('note',this.value)">${escapeHtml(state.entryDraft.note)}</textarea></details>
     <div id="entry-preview" class="mt12" aria-live="polite"></div>
     <button class="btn block mt12 ${state.entryBoard === 'kakomon' ? 'kako' : ''}" onclick="addItem()">添加${BOARDS[state.entryBoard]}（明天开始复习）</button>
   </div>`;
@@ -1945,6 +2154,7 @@ function renderEntry() {
   setMain(html);
   renderEntryPreview();
   state.justAdded = null; // 入场余晖只播一次
+  $('#new-book-name')?.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); commitBook(); } });
   const input = $('#entry-num') || $('#entry-source');
   if (input) input.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229) { e.preventDefault(); addItem(); } });
 }
@@ -1964,17 +2174,27 @@ function selectBook(name) {
 }
 window.selectBook = selectBook;
 function addBook() {
-  const name = (prompt('输入书名（例: 物理のエッセンス 緑）') || '').trim();
-  if (!name) return;
+  state.bookComposer = true;
+  state.bookEditMode = false;
+  renderEntry();
+  $('#new-book-name')?.focus();
+}
+function commitBook() {
+  const name = state.bookNameDraft.trim();
+  if (!name) { $('#new-book-name')?.focus(); return; }
   const key = bookKey(state.entryBoard, state.entrySubject);
   const list = state.books[key] || (state.books[key] = []);
   if (!list.includes(name)) {
-    if (list.length >= 20) { alert('每组最多 20 本书'); return; }
+    if (list.length >= 20) { showToast('每组最多 20 本书'); return; }
     list.push(name);
     saveBooks(state.books);
   }
+  state.bookComposer = false;
+  state.bookNameDraft = '';
   selectBook(name);
 }
+window.commitBook = commitBook;
+
 window.addBook = addBook;
 function removeBook(name) {
   const key = bookKey(state.entryBoard, state.entrySubject);
@@ -2216,7 +2436,8 @@ function renderStats() {
     <div class="stat-tile"><span class="tico">${ICON_LOOP}</span><div class="tval"><span class="cnum">${totalL}</span></div><div class="tlbl">循环中</div></div>
     <div class="stat-tile"><span class="tico">${ICON_GRADCAP}</span><div class="tval"><span class="cnum">${totalG}</span></div><div class="tlbl">维护复习</div></div>
   </div>`;
-  html += `<div class="card">
+  let inventory = '';
+  inventory += `<div class="card">
     <div class="section-title" style="margin-top:0">各科目题量</div>
     <table class="stat-table">
       <tr><th>科目</th><th class="r">循环中</th><th class="r">维护复习</th><th class="r">合计</th></tr>
@@ -2231,7 +2452,7 @@ function renderStats() {
     const grad = state.items.filter(i => i.board === k && i.status === 'graduated').length;
     return `<tr><td>${label}</td><td class="r">${learning}</td><td class="r">${grad}</td><td class="r">${learning + grad}</td></tr>`;
   }).join('');
-  html += `<div class="card">
+  inventory += `<div class="card">
     <div class="section-title" style="margin-top:0">母题 / 过去问</div>
     <table class="stat-table">
       <tr><th>类型</th><th class="r">循环中</th><th class="r">维护复习</th><th class="r">合计</th></tr>
@@ -2244,7 +2465,7 @@ function renderStats() {
   for (let d = 29; d >= 0; d--) days.push(addDaysStr(today, -d));
   const counts = days.map(d => completedCountOn(state.items, d));
   const max = Math.max(1, ...counts);
-  html += `<div class="card">
+  inventory += `<div class="card">
     <div class="section-title" style="margin-top:0">最近 30 天每日完成题数</div>
     <div class="bars">${days.map((d, i) => `<div class="bar-col" title="${d}: ${counts[i]}题">
       ${i === 29 && counts[i] > 0 ? `<div class="bar-val">${counts[i]}</div>` : ''}
@@ -2282,6 +2503,7 @@ function renderStats() {
       ${rateRows}
     </table>
   </div>`;
+  html += `<details class="stats-secondary"><summary>题量与历史趋势</summary>${inventory}</details>`;
   setMain(html);
 }
 
@@ -2303,10 +2525,9 @@ function renderData() {
   </div>`;
   html += renderSyncCard();
   html += renderLearningOsSyncCard();
-  html += `<div class="card danger-card">
-    <div class="section-title" style="margin-top:0;color:var(--bad)">危险操作</div>
-    <button class="btn block danger" onclick="clearAllData()">删除全部数据</button>
-  </div>
+  html += `<details class="card danger-card advanced-data"><summary>高级数据操作</summary>
+    <p class="small">删除前可先导出备份。</p><button class="btn block danger" onclick="clearAllData()">删除全部数据</button>
+  </details>
   <div class="tiny center mt12">所有数据保存在本浏览器的 localStorage 中 · 版本 ${APP_VERSION}</div>`;
   setMain(html);
 }
