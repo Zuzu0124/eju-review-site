@@ -10,6 +10,51 @@ function installedViewport(a) {
   window.visualViewport={height:812,scale:1};var shellEvents={};window.addEventListener=(name,fn)=>shellEvents[name]=fn;
   initStandaloneShell();`);
 }
+function diagnosticViewport(a) {
+ installedViewport(a);
+ a.run(`window.getComputedStyle=el=>({position:'static',paddingTop:'9px',paddingRight:'0px',paddingBottom:el===document.querySelector('.nav-bar')?'105px':'96px',paddingLeft:'0px',getPropertyValue:()=> '"2026-09-24.4"'});
+  document.body.getBoundingClientRect=()=>({top:0,bottom:812,height:812,width:402});
+  document.querySelector('.nav-bar').getBoundingClientRect=()=>({top:643,bottom:812,height:169,width:402});`);
+}
+test('display diagnostics distinguish excess safe padding from a gap outside the footer',()=>{
+ const a=app();diagnosticViewport(a);
+ let d=a.json('collectDisplayDiagnostics()');
+ assert.equal(d.safeArea.bottom,96);assert.equal(d.navStyle.paddingBottom,'105px');assert.equal(d.gapWithinBody,0);
+ a.run(`document.querySelector('.nav-bar').getBoundingClientRect=()=>({top:643,bottom:750,height:107,width:402});`);
+ d=a.json('collectDisplayDiagnostics()');assert.equal(d.gapWithinBody,62);
+ assert.equal(d.screen.height,874);assert.equal(d.layout.height,812);
+});
+test('diagnostics expose mismatched CSS versions without collecting private app data',()=>{
+ const a=app();diagnosticViewport(a);
+ a.run(`state.items=[createItem('数学','PRIVATE_BOOK_ABC','PRIVATE_NOTE_DEF',todayStr())];
+  window.location={href:'https://example.test/?token=PRIVATE_TOKEN_GHI'};
+  localStorage.getItem=()=>{throw Error('Diagnostics must not read storage');};
+  var oldComputed=window.getComputedStyle;window.getComputedStyle=el=>({...oldComputed(el),getPropertyValue:()=> '"2026-09-24.3"'});`);
+ const d=a.json('collectDisplayDiagnostics()');
+ assert.equal(d.version,'2026-09-24.4');assert.equal(d.cssVersion,'2026-09-24.3');
+ assert.doesNotMatch(JSON.stringify(d),/PRIVATE_|token|items|email/);
+ assert.equal(a.document.querySelectorAll('[aria-hidden="true"]').length,0);
+});
+test('display info remains selectable when clipboard access is unavailable',async()=>{
+ const a=app();diagnosticViewport(a);a.run(`state.view='data';renderData();window.navigator.clipboard={writeText:async()=>{throw Error('denied');}};`);
+ await a.run('copyDisplayDiagnostics()');
+ assert.match(a.document.querySelector('#display-diagnostic').textContent,/"version": "2026-09-24.4"/);
+ assert.match(a.document.querySelector('.toast').textContent,/自动复制不可用/);
+});
+test('reload preserves saved records and stops for unsaved edits or failed checkpoints',()=>{
+ const a=app();due(a);
+ const savedItems=a.storage.get('eju.items.v2');
+ a.run(`window.location={href:'https://example.test/eju/?v=3',replace:url=>{window.reloadedTo=url;}};
+  libraryEdits.set('draft',{source:'未保存'});reloadForUpdate();`);
+ assert.equal(a.run('window.reloadedTo'),undefined);
+ a.run(`libraryEdits.clear();startSession();var originalSet=localStorage.setItem;localStorage.setItem=()=>{throw Error('quota');};reloadForUpdate();`);
+ assert.equal(a.run('window.reloadedTo'),undefined);
+ a.run(`localStorage.setItem=originalSet;reloadForUpdate();`);
+ const target=new URL(a.run('window.reloadedTo'));
+ assert.equal(target.origin,'https://example.test');assert.equal(target.pathname,'/eju/');assert.ok(target.searchParams.get('eju_reload'));
+ assert.equal(a.storage.get('eju.items.v2'),savedItems);
+ assert.ok(a.storage.has('eju.session.v1'));
+});
 test('installed shell uses available web height when the OS owns part of the screen',()=>{
  const a=app();installedViewport(a);
  const height=()=>a.document.documentElement.style.getPropertyValue('--standalone-app-height');

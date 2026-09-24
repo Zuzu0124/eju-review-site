@@ -1,5 +1,6 @@
 /* Morning mist: an original mobile-first design system. */
 :root {
+ --eju-css-version:"2026-09-24.4";
  color-scheme:light; --standalone-app-height:100%; --bg:#f5f3ec; --card:#fcfbf7; --surface-2:#ebece3; --text:#293d33;
  --muted:#626e62; --faint:#70796c; --line:#d8ddd0; --accent:#456650; --accent-dim:#bfd0b8; --accent-soft:#e5ebdf; --btn-bg:#456650; --btn-text:#fffef7;
  --good:#456650; --mid:#766442; --bad:#96594c; --grad:#456650; --good-soft:var(--accent-soft); --mid-soft:#eee9dc; --bad-soft:#f3e7df;
@@ -82,6 +83,7 @@ details>summary::after{content:"+";font-size:19px;font-weight:400;color:var(--mu
 .stat-table{width:100%;border-collapse:collapse;font-size:12px}.stat-table th,.stat-table td{padding:12px 4px;text-align:left;border-bottom:1px solid var(--line);font-weight:400}.stat-table .r{text-align:right}.stats-secondary summary,.advanced-data summary{font-size:13px;color:var(--muted)}
 .setting-row{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:18px}.setting-row .form-input{width:136px;flex-shrink:0;font-size:13px}.setting-row label{font-size:14px}.setting-row small{font-size:11px;color:var(--muted);display:block;margin-top:5px}
 .save-state{border-top:1px solid var(--line);padding:15px 0;display:grid;grid-template-columns:auto 1fr;gap:8px 20px;font-size:12px}.save-state dt{color:var(--muted)}.save-state dd{margin:0;text-align:right}
+.display-tools summary{font-size:14px}.display-diagnostic{font:12px/1.6 ui-monospace,monospace;white-space:pre-wrap;overflow-wrap:anywhere;user-select:text;padding:14px;background:var(--surface-2);border-radius:8px;max-height:360px;overflow:auto}.display-tools .row{margin-block:12px}
 /* Review: stationary controls, directional content transitions. */
 .session{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;background:var(--bg);height:100dvh;padding-top:env(safe-area-inset-top)}.session.enter{animation:sessionEnter var(--enter) var(--ease-out);transform-origin:50% 65%}.session.leave{animation:sessionLeave 220ms var(--ease-in) forwards;pointer-events:none}
 .session-top{display:flex;align-items:center;gap:16px;width:100%;max-width:720px;margin:0 auto;padding:16px 24px;flex-shrink:0}.session-close{display:grid;place-items:center;width:44px;height:44px;flex-shrink:0;border:1px solid var(--line);border-radius:50%;background:transparent;color:var(--text)}.session-close svg{width:17px;height:17px;stroke-width:1.7}
