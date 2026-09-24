@@ -12,7 +12,7 @@ function installedViewport(a) {
 }
 function diagnosticViewport(a) {
  installedViewport(a);
- a.run(`window.getComputedStyle=el=>({position:'static',paddingTop:'9px',paddingRight:'0px',paddingBottom:el===document.querySelector('.nav-bar')?'105px':'96px',paddingLeft:'0px',getPropertyValue:()=> '"2026-09-24.4"'});
+ a.run(`window.getComputedStyle=el=>({position:'static',paddingTop:'9px',paddingRight:'0px',paddingBottom:el===document.querySelector('.nav-bar')?'105px':'96px',paddingLeft:'0px',getPropertyValue:()=> '"2026-09-24.5"'});
   document.body.getBoundingClientRect=()=>({top:0,bottom:812,height:812,width:402});
   document.querySelector('.nav-bar').getBoundingClientRect=()=>({top:643,bottom:812,height:169,width:402});`);
 }
@@ -31,14 +31,14 @@ test('diagnostics expose mismatched CSS versions without collecting private app 
   localStorage.getItem=()=>{throw Error('Diagnostics must not read storage');};
   var oldComputed=window.getComputedStyle;window.getComputedStyle=el=>({...oldComputed(el),getPropertyValue:()=> '"2026-09-24.3"'});`);
  const d=a.json('collectDisplayDiagnostics()');
- assert.equal(d.version,'2026-09-24.4');assert.equal(d.cssVersion,'2026-09-24.3');
+ assert.equal(d.version,'2026-09-24.5');assert.equal(d.cssVersion,'2026-09-24.3');
  assert.doesNotMatch(JSON.stringify(d),/PRIVATE_|token|items|email/);
  assert.equal(a.document.querySelectorAll('[aria-hidden="true"]').length,0);
 });
 test('display info remains selectable when clipboard access is unavailable',async()=>{
  const a=app();diagnosticViewport(a);a.run(`state.view='data';renderData();window.navigator.clipboard={writeText:async()=>{throw Error('denied');}};`);
  await a.run('copyDisplayDiagnostics()');
- assert.match(a.document.querySelector('#display-diagnostic').textContent,/"version": "2026-09-24.4"/);
+ assert.match(a.document.querySelector('#display-diagnostic').textContent,/"version": "2026-09-24.5"/);
  assert.match(a.document.querySelector('.toast').textContent,/自动复制不可用/);
 });
 test('reload preserves saved records and stops for unsaved edits or failed checkpoints',()=>{
@@ -300,4 +300,48 @@ test('explicit backup replacement restores original IDs after entry undo, despit
  assert.equal(a.run('state.items.length'),1);assert.equal(a.run('state.items[0].id'),a.run('backup.items[0].id'));
  assert.equal(a.run('state.deletedItemIds.length'),0);
  a.run(`cancelAddedItems(state.items.map(i=>i.id));applyMergedCloudData(backup);`);assert.equal(a.run('state.items.length'),0);
+});
+
+// Reproduce the user's 402 × 874 iPhone: viewport 812, top inset 62,
+// footer 107 (including the normal 34px home-indicator safe area).
+function reportedIPhone(a) {
+ installedViewport(a);
+ a.run(`window.navigator.userAgent='Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) Version/26.6.1';
+  Object.defineProperty(document.documentElement,'clientWidth',{configurable:true,get:()=>402});
+  var topInset=62;window.getComputedStyle=()=>({paddingTop:topInset+'px',paddingBottom:'34px',paddingLeft:'0px',paddingRight:'0px'});
+  updateStandaloneShellHeight();`);
+}
+test('reported iPhone geometry compensates only the missing top inset without accumulating it',()=>{
+ const a=app();reportedIPhone(a);
+ assert.equal(a.run('standaloneViewportHeight()'),874);
+ a.run('updateStandaloneShellHeight();updateStandaloneShellHeight();');
+ assert.equal(a.document.documentElement.style.getPropertyValue('--standalone-app-height'),'874px');
+ assert.equal(a.run('readDisplaySafeArea().bottom'),34);
+ assert.equal(a.document.querySelectorAll('[aria-hidden="true"]').length,0);
+ a.run('layoutHeight=874;window.innerHeight=874;updateStandaloneShellHeight();');
+ assert.equal(a.run('standaloneViewportHeight()'),874);
+});
+test('iPhone compensation leaves browser, iPad, landscape and OS-owned insets alone',()=>{
+ for(const setup of [
+  'window.navigator.standalone=false',
+  "window.navigator.userAgent='iPad'",
+  'window.screen={width:874,height:402}',
+  "Object.defineProperty(document.documentElement,'clientWidth',{get:()=>360})",
+  'topInset=0', 'topInset=44', 'layoutHeight=600'
+ ]) {
+  const a=app();reportedIPhone(a);a.run(setup);
+  assert.equal(a.run('standaloneViewportHeight()'),setup==='layoutHeight=600'?600:812,setup);
+ }
+});
+test('compensated iPhone restores full height after keyboard close and app resume',()=>{
+ const a=app();reportedIPhone(a);
+ a.run(`var phoneInput=document.createElement('input');Object.defineProperty(document,'activeElement',{get:()=>phoneInput});
+  window.visualViewport.height=440;updateKeyboardViewport();`);
+ assert.equal(a.run('standaloneViewportHeight()'),440);
+ a.run('window.visualViewport.height=812;shellEvents.pageshow();');a.flush(500);
+ assert.equal(a.document.documentElement.classList.contains('keyboard-open'),false);
+ assert.equal(a.run('standaloneViewportHeight()'),874);
+ a.run('window.visualViewport.height=406;window.visualViewport.scale=2;updateKeyboardViewport();');
+ assert.equal(a.document.documentElement.classList.contains('keyboard-open'),false);
+ assert.equal(a.run('standaloneViewportHeight()'),874);
 });
