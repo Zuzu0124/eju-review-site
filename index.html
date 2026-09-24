@@ -19,7 +19,9 @@ try {
   document.documentElement.dataset.motion = p.motion || 'system';
 } catch (_) {}
 </script>
-<link rel="stylesheet" href="assets/eju.css">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="assets/noto-serif-cjk-v1.css">
+<link rel="stylesheet" href="assets/eju.css?v=2026-09-24.2">
 </head>
 <body>
 <div class="app">
@@ -54,7 +56,7 @@ try {
 <script>
 'use strict';
 // 应用版本号：每次发布更新（数据页底部可见，便于确认设备上跑的是哪一版）
-const APP_VERSION = '2026-09-24.1';
+const APP_VERSION = '2026-09-24.2';
 /* ============================================================
  * EJU 间隔复习 — 单文件应用
  * 数据: localStorage（eju.items.v2）；旧版 eju.items.v1 自动迁移且保留不动

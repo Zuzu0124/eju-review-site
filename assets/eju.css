@@ -6,7 +6,7 @@
  --good-border:var(--line); --mid-border:var(--line); --bad-border:var(--line); --kako:var(--accent); --kako-soft:var(--accent-soft); --kako-btn:var(--btn-bg); --grad-soft:var(--accent-soft); --grad-border:var(--line);
  --hover-border:#aab9a2; --ring:#45665022; --bar:#a2b296; --bar-today:#456650; --bar-zero:#e1e6d9; --toast-bg:#293d33; --toast-text:#fffef7; --toast-undo:#d1e4bd;
  --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans CJK SC",sans-serif;
- --font-display:"Iowan Old Style","Palatino Linotype","Songti SC","Noto Serif CJK SC",serif; --font-mono:var(--font-sans);
+ --font-display:"Noto Serif CJK","Noto Serif CJK SC","Songti SC","Hiragino Mincho ProN",serif; --font-mono:var(--font-sans);
  --ease-out:cubic-bezier(.22,1,.36,1); --ease-in:cubic-bezier(.5,0,.75,.6); --ease-smooth:cubic-bezier(.4,0,.2,1); --press:110ms; --change:220ms; --panel:300ms; --enter:420ms; --finish:560ms; --scene-opacity:1;
 }
 :root[data-theme=dark] {
@@ -64,6 +64,9 @@ details>summary::after{content:"+";font-size:19px;font-weight:400;color:var(--mu
 .entry-card{border:0;padding-top:8px}#entry-num{font-size:26px;min-height:68px;letter-spacing:.01em;background:none;border:0;border-bottom:1px solid var(--line);border-radius:0;padding:10px 0}#entry-num:focus{box-shadow:none;border-color:var(--accent)}#entry-num::placeholder{font-size:18px}
 .subject-pick,.book-chips{display:flex;gap:7px;flex-wrap:wrap}.subject-pick button,.book-chip{border:1px solid var(--line);border-radius:7px;padding:9px 12px;min-height:44px;background:transparent;color:var(--muted);font-size:13px}.subject-pick button.on,.book-chip.on{background:var(--accent-soft);color:var(--accent);border-color:var(--accent-dim)}
 .book-chip.ghost{border-style:dashed}.book-chip .bx{padding-left:10px}.book-composer{padding:12px 0}.schedule-help summary{font-size:12px;color:var(--muted)}
+/* The same loaded face covers Han, kana and Latin in every book/source label. */
+.plan-first,.book-group>summary>span:first-child,.task-source,.book-chip:not(.ghost),#new-book-name,#entry-source,[id^="edit-source-"],.library-book-heading>span:first-child,.lib-source,.entry-recent .lib-main .flex1>div:first-child,.recent-event .flex1>div:first-child,.weak-item>span:first-child{font-family:var(--font-display);font-weight:500}
+.weak-item small{font-family:var(--font-sans);font-weight:400}
 .batch-toggle{min-height:48px;display:flex;gap:9px;align-items:center;font-size:12px;color:var(--muted)}.entry-note-panel{margin:0 0 14px;border-bottom:1px solid var(--line)}.entry-note-panel summary{font-size:13px;color:var(--muted)}#entry-preview{margin:0 0 14px;font-size:12px}.entry-success{min-height:24px;color:var(--accent);font-size:12px}
 .entry-recent .lib-item{padding:14px 0}.entry-recent .lib-main{padding:0}.entry-recent .row-in{animation:entryIn var(--panel) var(--ease-out)}
 .library-search{border-top:0;padding:0 0 20px}.library-filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-top:10px}.library-filters .form-input{font-size:12px;padding-inline:9px;min-height:44px}

@@ -37,7 +37,7 @@ http.createServer((req,res)=>{
    }
    res.setHeader('Content-Type','text/html; charset=utf-8');res.setHeader('Cache-Control','no-store');res.end(html);return;
  }
- const allowed=['/assets/eju.css','/assets/morning-mist.svg','/assets/morning-mist-dark.svg'];
+ const allowed=['/assets/eju.css','/assets/noto-serif-cjk-v1.css','/assets/morning-mist.svg','/assets/morning-mist-dark.svg'];
  if(!allowed.includes(url.pathname)){res.writeHead(404).end('Not found');return;}
  res.setHeader('Content-Type',url.pathname.endsWith('.css')?'text/css; charset=utf-8':'image/svg+xml');res.end(fs.readFileSync(path.join(root,url.pathname)));
 }).listen(port,host,()=>console.log(`EJU ${demo?'isolated demo':'local app'}: http://${host}:${port}`));
