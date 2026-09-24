@@ -4,6 +4,34 @@ EJU review task generator single page app
 - `index.html` — EJU 间隔复习应用
 - `jlpt.html` — N1 오답 수거함: JLPT N1 错题回收站（粘贴/截图 → Claude 自动解析为卡片 → 简化SM-2间隔复习，韩语界面）
 
+## Morning mist redesign (2026-09-24, draft)
+
+Mobile-first visual and interaction redesign: Today → persistent review session →
+completion, continuous entry, grouped library, footprints and settings. The app
+remains buildless. Original artwork and independent light/dark palettes are in
+assets/. Scheduling and historical replay rules are unchanged.
+
+```bash
+npm ci
+npm test        # 43 isolated DOM / logic regressions
+npm start       # http://127.0.0.1:4173
+npm run demo    # http://127.0.0.1:4174 — isolated synthetic records, no cloud SDK
+```
+
+[Implementation, data boundaries and validation report](docs/redesign-2026-09.md).
+This draft has no captured page screenshots or completed browser/device QA: the
+authoring browser's security policy blocked local preview. A separate 32-case
+browser suite is prepared, discovered but **not run**. In a local browser environment:
+
+```bash
+npx playwright install chromium webkit
+npm run test:browser
+```
+
+It writes key-page screenshots to test-results. Browser emulation is not an iPhone
+hardware check. No production account or real learning data was used, and no site
+was deployed. Earlier design notes below describe prior versions.
+
 ## AI Learning OS / Google Sheets sync
 
 `index.html` records every new review as an event with a stable ID. After the

@@ -1,0 +1,16 @@
+{
+  "name": "eju-review-site",
+  "private": true,
+  "version": "2026.9.24",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "start": "node scripts/serve.cjs",
+    "demo": "node scripts/serve.cjs --demo",
+    "test": "node --test tests/mobile-review.test.cjs tests/redesign.test.cjs",
+    "test:browser": "playwright test"
+  },
+  "devDependencies": {
+    "linkedom": "0.18.13",
+    "@playwright/test": "1.58.2"
+  }
+}

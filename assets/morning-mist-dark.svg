@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="650" viewBox="0 0 1200 650">
+ <title>晨雾中的松林</title><desc>为 EJU 复习原创的矢量景观。</desc>
+ <defs>
+  <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#18241f"/><stop offset="1" stop-color="#263e31"/></linearGradient>
+  <linearGradient id="mist" x2="0" y2="1"><stop stop-color="#18241f" stop-opacity="0"/><stop offset="1" stop-color="#18241f"/></linearGradient>
+  <symbol id="pine" viewBox="0 0 60 180"><path fill="currentColor" d="M29 0 12 39l10-3L5 68l15-4L0 101l18-6L2 129l24-5-1 56h9l-1-56 24 6-15-36 18 8-19-38 14 5-17-32 10 2Z"/></symbol>
+ </defs>
+ <path fill="url(#sky)" d="M0 0h1200v650H0z"/><circle cx="860" cy="139" r="52" fill="#a9b596" opacity=".7"/>
+ <path fill="#2a4134" d="M0 388Q100 350 174 370T330 287Q419 258 498 214T641 202Q710 193 768 241T924 254Q997 247 1065 283T1200 284V650H0Z"/>
+ <path fill="#334c3a" d="M0 458Q140 342 269 404T480 399Q572 388 659 321T828 321Q928 285 1073 376T1200 345V650H0Z"/>
+ <path fill="#456044" opacity=".55" d="M0 507Q218 419 355 470T622 415Q754 395 850 388T1030 363Q1120 383 1200 403V650H0Z"/>
+ <g color="#607857" opacity=".6">
+  <use href="#pine" x="625" y="307" width="40" height="160"/><use href="#pine" x="667" y="333" width="24" height="115"/>
+  <use href="#pine" x="720" y="311" width="39" height="153"/><use href="#pine" x="771" y="294" width="48" height="185"/>
+  <use href="#pine" x="828" y="334" width="36" height="150"/><use href="#pine" x="867" y="276" width="49" height="196"/>
+  <use href="#pine" x="920" y="255" width="49" height="191"/><use href="#pine" x="975" y="300" width="48" height="185"/>
+  <use href="#pine" x="1020" y="229" width="60" height="230"/><use href="#pine" x="1092" y="274" width="52" height="215"/><use href="#pine" x="1152" y="240" width="57" height="241"/>
+ </g>
+ <path fill="#365639" opacity=".55" d="M0 605Q142 511 317 547T589 518Q677 496 810 511T1057 474Q1144 465 1200 500V650H0Z"/>
+ <g color="#385b3c" opacity=".75"><use href="#pine" x="840" y="380" width="48" height="190"/><use href="#pine" x="904" y="345" width="69" height="253"/><use href="#pine" x="983" y="368" width="56" height="210"/><use href="#pine" x="1061" y="314" width="77" height="290"/><use href="#pine" x="1140" y="359" width="66" height="248"/></g>
+ <path fill="url(#mist)" d="M0 332h1200v318H0z"/>
+</svg>
