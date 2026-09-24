@@ -13,7 +13,7 @@ function app(storage = new Map()) {
   const timers = new Map();
   let nextTimer = 1;
   const window = { navigator:{onLine:true}, __EJU_TEST__: true, scrollY: 0, addEventListener() {}, scrollTo({top}) { this.scrollY = top; } };
-  const context = vm.createContext({ document, window, console: {...console,error(){}},
+  const context = vm.createContext({ document, window, URL, console: {...console,error(){}},
     navigator: { onLine: true }, performance: { now: () => 0 },
     requestAnimationFrame: () => 0,
     setTimeout: (fn, delay) => { const id = nextTimer++; timers.set(id, {fn, delay}); return id; },
