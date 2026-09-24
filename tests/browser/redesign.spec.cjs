@@ -18,6 +18,39 @@ async function seed(page,scenario='normal') {
 async function capture(page,info,name){await page.screenshot({path:info.outputPath(name+'.png'),fullPage:true});}
 async function noHorizontalOverflow(page){expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBe(true);}
 
+test('installed shell footer stays at its viewport edge across scroll, return and rotation',async({page},info)=>{
+ await page.setViewportSize({width:402,height:812});
+ await page.addInitScript(()=>{
+   Object.defineProperty(navigator,'standalone',{get:()=>true});
+   Object.defineProperty(screen,'height',{get:()=>874});
+ });
+ await seed(page,'overdue');
+ const aligned=async()=>{
+   const bounds=await page.evaluate(()=>({
+     height:document.documentElement.clientHeight,
+     nav:document.querySelector('.nav-bar').getBoundingClientRect().bottom,
+     app:document.querySelector('.app').getBoundingClientRect().bottom,
+     navTop:document.querySelector('.nav-bar').getBoundingClientRect().top,
+   }));
+   expect(bounds.nav).toBeCloseTo(bounds.height,0);
+   expect(bounds.app).toBeCloseTo(bounds.navTop,0);
+ };
+ await aligned();await capture(page,info,'standalone-home');
+ await page.getByRole('button',{name:'题库',exact:true}).click();
+ await page.locator('.app').evaluate(el=>el.scrollTo({top:300}));
+ await aligned();
+ await page.getByRole('button',{name:'足迹',exact:true}).click();
+ await page.getByRole('button',{name:'题库',exact:true}).click();
+ expect(await page.locator('.app').evaluate(el=>el.scrollTop)).toBeCloseTo(300,0);
+ await page.setViewportSize({width:844,height:390});
+ await expect.poll(()=>page.evaluate(()=>document.body.getBoundingClientRect().height)).toBeCloseTo(390,0);
+ await aligned();
+ await page.getByRole('button',{name:'今日',exact:true}).click();
+ await page.getByRole('button',{name:'开始这一组'}).click();
+ await expect.poll(()=>page.locator('.session').evaluate(el=>el.getBoundingClientRect().bottom)).toBeCloseTo(390,0);
+ await expect(page.locator('.session-rate')).toBeInViewport();
+});
+
 test('home → review → restore → undo → completion with stable controls',async({page},info)=>{
  await seed(page);await noHorizontalOverflow(page);
  await expect(page.getByRole('button',{name:'开始这一组'})).toBeVisible();
