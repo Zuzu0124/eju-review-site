@@ -1,6 +1,6 @@
 /* Morning mist: an original mobile-first design system. */
 :root {
- --eju-css-version:"2026-09-24.4";
+ --eju-css-version:"2026-09-24.5";
  color-scheme:light; --standalone-app-height:100%; --bg:#f5f3ec; --card:#fcfbf7; --surface-2:#ebece3; --text:#293d33;
  --muted:#626e62; --faint:#70796c; --line:#d8ddd0; --accent:#456650; --accent-dim:#bfd0b8; --accent-soft:#e5ebdf; --btn-bg:#456650; --btn-text:#fffef7;
  --good:#456650; --mid:#766442; --bad:#96594c; --grad:#456650; --good-soft:var(--accent-soft); --mid-soft:#eee9dc; --bad-soft:#f3e7df;

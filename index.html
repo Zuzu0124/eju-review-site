@@ -21,7 +21,7 @@ try {
 </script>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="assets/noto-serif-cjk-v1.css">
-<link rel="stylesheet" href="assets/eju.css?v=2026-09-24.4">
+<link rel="stylesheet" href="assets/eju.css?v=2026-09-24.5">
 </head>
 <body>
 <div class="app">
@@ -56,7 +56,7 @@ try {
 <script>
 'use strict';
 // 应用版本号：每次发布更新（数据页底部可见，便于确认设备上跑的是哪一版）
-const APP_VERSION = '2026-09-24.4';
+const APP_VERSION = '2026-09-24.5';
 /* ============================================================
  * EJU 间隔复习 — 单文件应用
  * 数据: localStorage（eju.items.v2）；旧版 eju.items.v1 自动迁移且保留不动
@@ -2266,14 +2266,36 @@ function isStandaloneWebApp() {
     || window.navigator.standalone === true;
 }
 
+function readDisplaySafeArea() {
+  const probe = document.createElement('div');
+  probe.setAttribute('aria-hidden','true');
+  probe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;width:0;height:0;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)';
+  document.body.appendChild(probe);
+  try {
+    const style = window.getComputedStyle?.(probe);
+    return Object.fromEntries(['Top','Right','Bottom','Left'].map(side => [side.toLowerCase(),parseFloat(style?.['padding'+side]) || 0]));
+  } finally { probe.remove(); }
+}
+
 function standaloneViewportHeight() {
-  // The physical screen can include an OS-owned status bar or another iPad
-  // window. Use the web layout viewport, shared by the shell and its footer.
   const root = document.documentElement;
   const height = root.clientHeight || window.innerHeight;
   const viewport = window.visualViewport;
-  return root.classList.contains('keyboard-open') && viewport
-    ? viewport.height : height;
+  if (root.classList.contains('keyboard-open') && viewport) return viewport.height;
+
+  // Some iPhone Home Screen windows report a viewport excluding the status
+  // bar while retaining its safe inset (observed in device diagnostics).
+  // Compensate only that exact portrait geometry, never arbitrary screen gaps
+  // or iPad window sizes. Do not compensate when the top inset is zero.
+  const screen = window.screen;
+  if (isStandaloneWebApp() && /iPhone/.test(window.navigator.userAgent || '')
+      && screen?.height > screen?.width
+      && Math.abs(root.clientWidth - screen.width) <= 1) {
+    const top = readDisplaySafeArea().top;
+    const missing = screen.height - height;
+    if (top > 0 && missing > 0 && Math.abs(missing - top) <= 1) return screen.height;
+  }
+  return height;
 }
 
 function updateStandaloneShellHeight() {
@@ -2326,15 +2348,7 @@ function collectDisplayDiagnostics() {
     return {top:round(r.top),bottom:round(r.bottom),height:round(r.height),width:round(r.width)};
   };
   const nav = $('.nav-bar'), navStyle = computed(nav), rootStyle = computed(root);
-  const probe = document.createElement('div');
-  probe.setAttribute('aria-hidden','true');
-  probe.style.cssText = 'position:fixed;visibility:hidden;pointer-events:none;width:0;height:0;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)';
-  document.body.appendChild(probe);
-  let safeArea;
-  try {
-    const style = computed(probe);
-    safeArea = Object.fromEntries(['Top','Right','Bottom','Left'].map(side => [side.toLowerCase(),round(parseFloat(style?.['padding'+side]))]));
-  } finally { probe.remove(); }
+  const safeArea = readDisplaySafeArea();
   const navBox = box(nav), bodyBox = box(document.body);
   return {
     version:APP_VERSION,
