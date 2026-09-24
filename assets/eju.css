@@ -1,6 +1,6 @@
 /* Morning mist: an original mobile-first design system. */
 :root {
- color-scheme:light; --standalone-app-height:100dvh; --bg:#f5f3ec; --card:#fcfbf7; --surface-2:#ebece3; --text:#293d33;
+ color-scheme:light; --standalone-app-height:100%; --bg:#f5f3ec; --card:#fcfbf7; --surface-2:#ebece3; --text:#293d33;
  --muted:#626e62; --faint:#70796c; --line:#d8ddd0; --accent:#456650; --accent-dim:#bfd0b8; --accent-soft:#e5ebdf; --btn-bg:#456650; --btn-text:#fffef7;
  --good:#456650; --mid:#766442; --bad:#96594c; --grad:#456650; --good-soft:var(--accent-soft); --mid-soft:#eee9dc; --bad-soft:#f3e7df;
  --good-border:var(--line); --mid-border:var(--line); --bad-border:var(--line); --kako:var(--accent); --kako-soft:var(--accent-soft); --kako-btn:var(--btn-bg); --grad-soft:var(--accent-soft); --grad-border:var(--line);
@@ -101,7 +101,17 @@ details>summary::after{content:"+";font-size:19px;font-weight:400;color:var(--mu
 .toast{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-radius:9px;background:var(--toast-bg);color:var(--toast-text);font-size:12px;box-shadow:0 7px 24px #17271b20;animation:toastIn var(--change) var(--ease-out);pointer-events:auto}.toast .undo{flex-shrink:0;min-height:44px;border:0;color:var(--toast-undo);background:transparent;padding:6px 8px;font:600 13px var(--font-sans)}.toast.out{opacity:0;transition:opacity 180ms}
 .modal-backdrop{position:fixed;inset:0;z-index:90;background:#0a181c66;display:flex;align-items:flex-end;justify-content:center}.modal-panel{width:100%;max-width:620px;background:var(--card);border-radius:16px 16px 0 0;padding:26px 24px calc(24px + env(safe-area-inset-bottom));max-height:90dvh;overflow:auto;animation:entryIn var(--panel) var(--ease-out)}
 .modal-panel h2{font:500 26px var(--font-display);margin:0 0 16px}.modal-panel .btn{width:100%;margin-top:10px;text-align:left}
-html.session-open body{overflow:hidden}html.standalone-shell,html.standalone-shell body{height:100%;overflow:hidden}html.standalone-shell .app{height:var(--standalone-app-height);overflow-y:auto;overscroll-behavior-y:contain}html.standalone-shell .session{height:var(--standalone-app-height)}html.keyboard-open .nav-bar{display:none}
+html.session-open body{overflow:hidden}
+/* Installed apps share one layout viewport. A fixed footer can use a different
+   viewport origin on iOS, so keep it in the shell's normal flex flow. */
+html.standalone-shell{height:100%;overflow:hidden}
+html.standalone-shell body{position:relative;display:flex;flex-direction:column;height:var(--standalone-app-height);overflow:hidden}
+html.standalone-shell .app{flex:1 1 0;min-height:0;height:auto;width:100%;margin:0 auto;padding-bottom:24px;overflow-y:auto;overscroll-behavior-y:contain}
+html.standalone-shell .nav-bar{position:static;flex-shrink:0;margin:0 auto;transform:none}
+html.standalone-shell .session,html.standalone-shell .modal-backdrop{position:absolute;height:100%}
+html.standalone-shell .modal-panel{max-height:90%}
+html.standalone-shell .toast-wrap{position:absolute}
+html.keyboard-open .nav-bar{display:none}
 .view-enter{animation:viewEnter 300ms var(--ease-out)}.slide-l{animation:pageNext 240ms var(--ease-out)}.slide-r{animation:pageBack 240ms var(--ease-out)}
 @keyframes pageNext{from{opacity:.45;transform:translateX(14px)}}@keyframes pageBack{from{opacity:.45;transform:translateX(-14px)}}@keyframes viewEnter{from{opacity:0;transform:translateY(8px)}}
 @keyframes sessionEnter{from{opacity:.2;transform:translateY(38px) scale(.96)}}@keyframes sessionLeave{to{opacity:0;transform:translateY(26px) scale(.98)}}@keyframes questionIn{from{opacity:0;transform:translateX(16px)}}@keyframes questionBack{from{opacity:0;transform:translateX(-20px)}}@keyframes questionOut{to{opacity:0;transform:translateX(-14px)}}

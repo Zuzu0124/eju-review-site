@@ -21,7 +21,7 @@ try {
 </script>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="assets/noto-serif-cjk-v1.css">
-<link rel="stylesheet" href="assets/eju.css?v=2026-09-24.2">
+<link rel="stylesheet" href="assets/eju.css?v=2026-09-24.3">
 </head>
 <body>
 <div class="app">
@@ -56,7 +56,7 @@ try {
 <script>
 'use strict';
 // 应用版本号：每次发布更新（数据页底部可见，便于确认设备上跑的是哪一版）
-const APP_VERSION = '2026-09-24.2';
+const APP_VERSION = '2026-09-24.3';
 /* ============================================================
  * EJU 间隔复习 — 单文件应用
  * 数据: localStorage（eju.items.v2）；旧版 eju.items.v1 自动迁移且保留不动
@@ -2265,18 +2265,22 @@ function isStandaloneWebApp() {
     || window.navigator.standalone === true;
 }
 
-function standaloneScreenHeight() {
-  const width = window.screen?.width || window.innerWidth;
-  const height = window.screen?.height || window.innerHeight;
-  return window.matchMedia?.('(orientation: portrait)').matches
-    ? Math.max(width, height)
-    : Math.min(width, height);
+function standaloneViewportHeight() {
+  // The physical screen can include an OS-owned status bar or another iPad
+  // window. Use the web layout viewport, shared by the shell and its footer.
+  const root = document.documentElement;
+  const height = root.clientHeight || window.innerHeight;
+  const viewport = window.visualViewport;
+  return root.classList.contains('keyboard-open') && viewport
+    ? viewport.height : height;
 }
 
 function updateStandaloneShellHeight() {
+  const height = standaloneViewportHeight();
+  if (!Number.isFinite(height) || height <= 0) return;
   document.documentElement.style.setProperty(
     '--standalone-app-height',
-    `${standaloneScreenHeight()}px`
+    `${height}px`
   );
 }
 
@@ -2288,11 +2292,25 @@ function initStandaloneShell() {
   const schedule = () => {
     timers.forEach(clearTimeout);
     timers = [0, 150, 500].map(delay =>
-      setTimeout(updateStandaloneShellHeight, delay)
+      setTimeout(() => { updateKeyboardViewport(); updateStandaloneShellHeight(); }, delay)
     );
   };
+  window.addEventListener('resize', schedule);
   window.addEventListener('orientationchange', schedule);
   window.addEventListener('pageshow', schedule);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) schedule(); });
+}
+
+function updateKeyboardViewport() {
+  const viewport = window.visualViewport;
+  if (!viewport) return;
+  const root = document.documentElement;
+  const input = ['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName);
+  const height = root.clientHeight || window.innerHeight;
+  // Pinch zoom also shrinks visualViewport; it is not a software keyboard.
+  const unzoomed = Math.abs((viewport.scale || 1) - 1) < 0.01;
+  root.classList.toggle('keyboard-open', input && unzoomed && height - viewport.height > 120);
+  if (root.classList.contains('standalone-shell')) updateStandaloneShellHeight();
 }
 
 const disclosureAnimations=new WeakMap();
@@ -2336,11 +2354,11 @@ function initInterfaceBehavior() {
   window.matchMedia?.('(prefers-reduced-motion: reduce)').addEventListener?.('change',applyPreferences);
   const viewport=window.visualViewport;
   if(viewport){
-    const update=()=>{
-      const input=['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName);
-      document.documentElement.classList.toggle('keyboard-open',input&&window.innerHeight-viewport.height>120);
-    };
-    viewport.addEventListener('resize',update);document.addEventListener('focusout',update);document.addEventListener('focusin',update);
+    viewport.addEventListener('resize',updateKeyboardViewport);
+    document.addEventListener('focusin',updateKeyboardViewport);
+    // activeElement changes after focusout; read it on the next task.
+    document.addEventListener('focusout',()=>setTimeout(updateKeyboardViewport,0));
+    updateKeyboardViewport();
   }
   const refresh=()=>{
     if(document.hidden){if(session)checkpointSession();return;}

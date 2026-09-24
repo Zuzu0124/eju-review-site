@@ -4,6 +4,58 @@ const {app}=require('./helpers/app.cjs');
 function due(a,n=3){a.run(`state.items=Array.from({length:${n}},(_,n)=>createItem('数学','数学の本 '+(n+1),'先独立完成',addDaysStr(todayStr(),-2)));saveItems(state.items);`);}
 function reload(a){const b=app(a.storage);b.run('readLatestReviewItems();restoreSession();');return b;}
 
+function installedViewport(a) {
+ a.run(`window.navigator.standalone=true;window.innerHeight=812;window.screen={width:402,height:874};
+  var layoutHeight=812;Object.defineProperty(document.documentElement,'clientHeight',{get:()=>layoutHeight});
+  window.visualViewport={height:812,scale:1};var shellEvents={};window.addEventListener=(name,fn)=>shellEvents[name]=fn;
+  initStandaloneShell();`);
+}
+test('installed shell uses available web height when the OS owns part of the screen',()=>{
+ const a=app();installedViewport(a);
+ const height=()=>a.document.documentElement.style.getPropertyValue('--standalone-app-height');
+ assert.equal(height(),'812px');
+ a.run(`layoutHeight=600;window.innerHeight=600;shellEvents.resize();`);a.flush(0);
+ assert.equal(height(),'600px');
+ a.run(`layoutHeight=360;window.innerHeight=360;shellEvents.orientationchange();`);a.flush(150);
+ assert.equal(height(),'360px');
+ a.run(`layoutHeight=812;window.innerHeight=812;shellEvents.pageshow();`);a.flush(500);
+ assert.equal(height(),'812px');
+});
+test('keyboard resizes the installed scroll area and closing it restores the footer state',()=>{
+ const a=app();installedViewport(a);
+ a.run(`var activeInput=document.createElement('input');Object.defineProperty(document,'activeElement',{configurable:true,get:()=>activeInput});
+  window.innerHeight=440;window.visualViewport.height=440;updateKeyboardViewport();`);
+ assert.ok(a.document.documentElement.classList.contains('keyboard-open'));
+ assert.equal(a.document.documentElement.style.getPropertyValue('--standalone-app-height'),'440px');
+ a.run(`window.visualViewport.height=812;window.innerHeight=812;updateKeyboardViewport();`);
+ assert.equal(a.document.documentElement.classList.contains('keyboard-open'),false);
+ assert.equal(a.document.documentElement.style.getPropertyValue('--standalone-app-height'),'812px');
+ // Some iOS returns from the app switcher omit visualViewport.resize.
+ a.run(`window.visualViewport.height=440;updateKeyboardViewport();window.visualViewport.height=812;shellEvents.pageshow();`);
+ a.flush(500);
+ assert.equal(a.document.documentElement.classList.contains('keyboard-open'),false);
+ assert.equal(a.document.documentElement.style.getPropertyValue('--standalone-app-height'),'812px');
+});
+test('pinch zoom and a smaller visual viewport without input do not trigger keyboard layout',()=>{
+ const a=app();installedViewport(a);
+ a.run(`Object.defineProperty(document,'activeElement',{get:()=>document.createElement('input')});
+  window.visualViewport.height=406;window.visualViewport.scale=2;updateKeyboardViewport();`);
+ assert.equal(a.document.documentElement.classList.contains('keyboard-open'),false);
+ assert.equal(a.document.documentElement.style.getPropertyValue('--standalone-app-height'),'812px');
+ const b=app();installedViewport(b);b.run(`window.visualViewport.height=600;updateKeyboardViewport();`);
+ assert.equal(b.document.documentElement.classList.contains('keyboard-open'),false);
+ assert.equal(b.document.documentElement.style.getPropertyValue('--standalone-app-height'),'812px');
+});
+test('browser mode keeps native layout and invalid startup metrics cannot write NaN heights',()=>{
+ const a=app();a.run('initStandaloneShell()');
+ assert.equal(a.document.documentElement.classList.contains('standalone-shell'),false);
+ assert.equal(a.document.documentElement.style.getPropertyValue('--standalone-app-height')||'','');
+ a.run(`window.navigator.standalone=true;initStandaloneShell();`);
+ assert.equal(a.document.documentElement.style.getPropertyValue('--standalone-app-height')||'','');
+ a.run(`window.innerHeight=700;updateStandaloneShellHeight();`);
+ assert.equal(a.document.documentElement.style.getPropertyValue('--standalone-app-height'),'700px');
+});
+
 test('home prioritizes five questions and lazily groups 1000 overdue items',()=>{
  const a=app();due(a,1000);a.run('renderReview()');
  assert.equal(a.document.querySelectorAll('.task-card').length,0);
